@@ -1,0 +1,12 @@
+{
+  "name": "BeatMaster",
+  "short_name": "BeatMaster",
+  "description": "Professional Music Performance App — Metronome, Setlist & Sampler",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0515",
+  "theme_color": "#7c3aed",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }
+  ]
+}

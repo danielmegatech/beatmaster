@@ -1,71 +1,92 @@
 
-# BeatMaster — Professional Music Performance App
 
-## Overview
-A single-page, all-in-one music performance tool with a dark purple glassmorphism aesthetic. All modules are visible on one scrollable page with a sticky footer player — optimized for live performance.
+# BeatMaster Overhaul Plan
 
----
-
-## 🎨 Design & Theme
-- **Dark mode** by default with deep purple/violet gradient accents
-- **Glassmorphism** cards with frosted-glass backgrounds, subtle borders, and soft shadows
-- Purple glow effects on active elements and beat indicators
-- Responsive layout: side-by-side grid on desktop/tablet, stacked on mobile
-- Smooth animations and instant visual feedback on all interactions
+This is a significant refactor touching nearly every file. Here's a summary of all changes organized by module.
 
 ---
 
-## 🥁 Module 1: Metronome (Top Section)
-- **BPM Control**: Large BPM display with a slider (40–240 BPM) and +/- fine-tune buttons
-- **Tap Tempo**: Button to set BPM by tapping rhythmically
-- **Time Signature Selector**: 2/4, 3/4, 4/4, 5/4, 6/8, 7/8
-- **Subdivision Selector**: Quarter, eighth, triplet, sixteenth notes
-- **Sound Selector**: 10+ timbres generated via Web Audio API oscillators (Triangle, Sine, Square, Sawtooth, Woodblock, Cowbell, Hi-Hat, Rim, Clave, Click)
-- **Volume & Pan**: Sliders for metronome click volume and stereo panning (L/R)
-- **Visual Beat Indicator**: Row of glowing dots/circles that flash in sync with the audio beat — accent on beat 1 in a distinct color
-- **Audio Engine**: Built on Web Audio API with `audioContext.currentTime` scheduling for drift-free precision
+## 1. Vite Config — Base Path
+- Add `base: '/smartbeat/'` to `vite.config.ts`
+- Update `manifest.json` paths to use `/smartbeat/` prefix
+
+## 2. Theme — Light Mode Support
+- Add light mode CSS variables (glassmorphism with violet text accents)
+- Add a theme toggle (light/dark) using `next-themes` (already installed)
+- Beat 1 color changed to **green**, other beats stay purple
+
+## 3. Types Update (`types/beatmaster.ts`)
+- Add `PadMode` type: `'sampler' | 'loop'`
+- Add `audioUrl?: string` to `PadConfig` for external URL support
+- Add `mode?: PadMode` to `PadConfig`
+- Add `12/8`, `7/4`, `13/8` to supported time signatures
+
+## 4. Default Preset Data (new file `src/data/defaultPresets.ts`)
+- Contains the full 68-song "Banda New Metal" playlist with all BPMs and time signatures
+- Contains 5 default pad configs with Pixabay CDN URLs for Kick, Snare, Hihat, Crash, Air Horn
+- On first load (no localStorage data), these presets are seeded into state
+
+## 5. Metronome UI — Navigation Buttons Instead of Dropdowns
+- Replace **Select dropdowns** for Time Signature, Subdivision, and Timbre with **< Previous / Next >** button pairs
+- Each shows current value with arrow buttons on either side
+- Keeps the slider for BPM and volume/pan
+
+## 6. Beat Indicator — Color Update
+- Beat 1: **Green** glow (`hsl(142, 70%, 50%)`)
+- Other beats: Purple/violet (current primary)
+- Add beat labels in footer: "Beat 1", "Beat 2", etc.
+
+## 7. Sampler Pads — Major Refactor (`SamplerPad.tsx`)
+- **Hybrid mode per pad**: Each pad has individual `sampler` or `loop` mode toggle (no more global tabs)
+- **Momentary mode**: In sampler mode, audio plays on keydown/mousedown and stops with fade-out on keyup/mouseup
+- **Context menu / gear icon**: Opens a config modal per pad with: rename, volume, pan, load local file, paste URL
+- **Auto-cache from URL**: On app load, fetch audio from URLs, decode to `AudioBuffer`, store in memory for offline use
+- **Default sounds**: Pre-load the 5 Pixabay URLs on first run
+- Remove the old Pads/Sampler tabs layout — show all 5 pads in a single row
+
+## 8. Keyboard Mapping (new hook `useKeyboardShortcuts.ts`)
+- `1-5`: Trigger pads (keydown = play, keyup = stop for momentary mode)
+- `Space`: Toggle metronome play/pause
+- `T`: Tap tempo
+- `ArrowLeft/Right`: In setlist mode, navigate songs. In free mode, BPM ±10
+- `ArrowUp/Down`: Master volume ±5%
+- `L`: Pan left (-1), `C`: Pan center (0), `R`: Pan right (1)
+- `Ctrl+P`: Cycle through playlists
+
+## 9. Setlist Manager — Import Multi-Sheet Excel
+- Update `importXlsx` to read **all sheets** from an Excel file, creating one playlist per sheet tab
+- Keep existing single-playlist export
+
+## 10. Footer Player — Pan Control + Beat Labels
+- Add pan control (L/C/R buttons or slider)
+- Add beat number labels under each dot: "Beat 1", "Beat 2"...
+- Show mode switch (Free/Setlist) with clearer labeling
+
+## 11. Layout — Performance-Optimized Single Page
+- Desktop: Metronome fixed on the **left column**, Sampler + Setlist stacked on the right
+- Mobile: Metronome on top, Sampler below, Setlist below, all stacked
+- Minimize scrolling — key controls always visible
+
+## 12. Pan Correction
+- Ensure pan slider: -1 = 100% Left, +1 = 100% Right (already correct in Web Audio API, just verify labels show "L" and "R" correctly)
 
 ---
 
-## 📋 Module 2: Setlist Manager (Middle Section)
-- **Playlist Management**: Create, rename, and delete multiple playlists
-- **Song List**: Each song has Name, BPM, Time Signature, and Notes fields
-- **CRUD Operations**: Add, edit, delete songs with inline editing
-- **Drag & Drop Reordering**: Reorder songs within a playlist
-- **Auto-Sync**: Clicking a song instantly updates the metronome's BPM and time signature
-- **Import/Export**: Import and export setlists as Excel (.xlsx) files using the `xlsx` library
-- **Active Song Highlight**: Currently selected song is visually highlighted
+## Files to Create/Modify
 
----
+| File | Action |
+|------|--------|
+| `vite.config.ts` | Add `base: '/smartbeat/'` |
+| `src/data/defaultPresets.ts` | **New** — 68 songs + 5 pad URLs |
+| `src/hooks/useKeyboardShortcuts.ts` | **New** — all keyboard bindings |
+| `src/types/beatmaster.ts` | Add PadMode, audioUrl, extra time sigs |
+| `src/index.css` | Add light mode vars, green glow class |
+| `src/pages/Index.tsx` | Refactor layout, wire keyboard hook |
+| `src/components/beatmaster/Metronome.tsx` | Replace dropdowns with prev/next buttons |
+| `src/components/beatmaster/BeatIndicator.tsx` | Green for beat 1, optional labels |
+| `src/components/beatmaster/SamplerPad.tsx` | Hybrid pads, momentary, config modal, URL loading |
+| `src/components/beatmaster/FooterPlayer.tsx` | Add pan, beat labels |
+| `src/components/beatmaster/SetlistManager.tsx` | Multi-sheet import |
+| `public/manifest.json` | Update paths for `/smartbeat/` |
+| `index.html` | Update base href |
 
-## 🎹 Module 3: Sampler Pad & Loop Player (Below Setlist)
-- **Two Modes** toggled by tabs:
-  - **Pads Mode**: 5 large buttons for one-shot sounds (Kick, Snare, Clap, Hi-Hat, Cymbal) — generated via Web Audio API
-  - **Sampler Mode**: 5 buttons for longer audio loops with progress bars
-- **Per-Pad Controls**: Individual volume and pan sliders for each pad
-- **Stop All Button**: Immediately stops all playing samples/loops
-- **Bank Management**: Import/export the full sound bank (including audio files) as a .zip file using the `jszip` library
-
----
-
-## 🎵 Module 4: Footer Player (Sticky Bottom Bar)
-- Fixed bar at the bottom of the screen, always visible
-- **Play/Pause**: Global metronome start/stop
-- **Previous/Next**: Navigate through songs in the active setlist
-- **Beat Indicator**: Compact visual beat dots synced with the metronome
-- **Volume Master**: Master volume control
-- **Mode Toggle**: Switch between "Free Mode" (manual BPM) and "Setlist Mode" (BPM follows the selected song)
-- **Current Song Display**: Shows the name and BPM of the active song
-
----
-
-## 💾 Data & PWA
-- **LocalStorage Persistence**: All playlists, songs, settings, and pad configurations saved locally
-- **PWA Setup**: Service worker for offline support, installable on iOS/Android with app manifest and icons
-- **No backend required** — fully client-side application
-
----
-
-## 📱 Responsive Behavior
-- **Desktop/Tablet**: Metronome and Sampler side by side, Setlist below or alongside
-- **Mobile**: All modules stacked vertically, touch-optimized pad buttons, compact footer

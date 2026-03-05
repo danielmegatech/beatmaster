@@ -14,6 +14,8 @@ interface FooterPlayerProps {
   beatsPerMeasure: number;
   masterVolume: number;
   setMasterVolume: (v: number) => void;
+  pan: number;
+  setPan: (v: number) => void;
   mode: AppMode;
   setMode: (m: AppMode) => void;
   activeSong: Song | null;
@@ -23,8 +25,8 @@ interface FooterPlayerProps {
 
 const FooterPlayer: React.FC<FooterPlayerProps> = ({
   isPlaying, toggle, bpm, currentBeat, beatsPerMeasure,
-  masterVolume, setMasterVolume, mode, setMode,
-  activeSong, onPrev, onNext,
+  masterVolume, setMasterVolume, pan, setPan,
+  mode, setMode, activeSong, onPrev, onNext,
 }) => {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border/50 px-4 py-3">
@@ -56,14 +58,29 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
 
         {/* Beat indicator + BPM */}
         <div className="flex items-center gap-3">
-          <BeatIndicator beatsPerMeasure={beatsPerMeasure} currentBeat={currentBeat} compact />
+          <BeatIndicator beatsPerMeasure={beatsPerMeasure} currentBeat={currentBeat} compact showLabels />
           <span className="text-sm tabular-nums font-semibold text-foreground">{bpm}</span>
         </div>
 
         {/* Master volume */}
-        <div className="hidden sm:flex items-center gap-2 w-32">
-          <Volume2 className="w-4 h-4 text-muted-foreground" />
+        <div className="hidden sm:flex items-center gap-2 w-28">
+          <Volume2 className="w-4 h-4 text-muted-foreground shrink-0" />
           <Slider value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} />
+        </div>
+
+        {/* Pan L/C/R */}
+        <div className="hidden md:flex items-center gap-1">
+          {[{ label: 'L', val: -1 }, { label: 'C', val: 0 }, { label: 'R', val: 1 }].map(({ label, val }) => (
+            <Button
+              key={label}
+              variant={Math.abs(pan - val) < 0.1 ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 w-7 text-xs p-0"
+              onClick={() => setPan(val)}
+            >
+              {label}
+            </Button>
+          ))}
         </div>
 
         {/* Mode toggle */}

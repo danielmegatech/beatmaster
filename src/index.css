@@ -46,6 +46,37 @@
     --glow-primary: 270 70% 60%;
     --glow-accent: 280 80% 65%;
     --glow-beat: 45 90% 60%;
+    --glow-green: 142 70% 50%;
+  }
+
+  .light {
+    --background: 260 30% 96%;
+    --foreground: 270 40% 15%;
+
+    --card: 260 30% 100%;
+    --card-foreground: 270 40% 15%;
+
+    --popover: 260 30% 100%;
+    --popover-foreground: 270 40% 15%;
+
+    --primary: 270 70% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 270 20% 90%;
+    --secondary-foreground: 270 40% 25%;
+
+    --muted: 270 15% 92%;
+    --muted-foreground: 270 15% 45%;
+
+    --accent: 280 70% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 270 20% 85%;
+    --input: 270 20% 85%;
+    --ring: 270 70% 55%;
   }
 }
 
@@ -62,6 +93,14 @@
     );
     min-height: 100vh;
   }
+  .light body,
+  body:is(.light *) {
+    background-image: radial-gradient(
+      ellipse at top,
+      hsl(260 30% 98%) 0%,
+      hsl(260 30% 94%) 60%
+    );
+  }
 }
 
 @layer utilities {
@@ -71,6 +110,11 @@
     border: 1px solid hsl(270 30% 25% / 0.4);
     box-shadow: 0 8px 32px hsl(270 50% 5% / 0.4);
   }
+  .light .glass {
+    background: hsl(0 0% 100% / 0.7);
+    border: 1px solid hsl(270 20% 85% / 0.6);
+    box-shadow: 0 8px 32px hsl(270 30% 80% / 0.2);
+  }
   .glow-purple {
     box-shadow: 0 0 20px hsl(270 70% 60% / 0.4), 0 0 60px hsl(270 70% 60% / 0.1);
   }
@@ -79,5 +123,8 @@
   }
   .glow-beat {
     box-shadow: 0 0 16px hsl(45 90% 60% / 0.6), 0 0 40px hsl(45 90% 60% / 0.2);
+  }
+  .glow-green {
+    box-shadow: 0 0 16px hsl(142 70% 50% / 0.6), 0 0 40px hsl(142 70% 50% / 0.2);
   }
 }

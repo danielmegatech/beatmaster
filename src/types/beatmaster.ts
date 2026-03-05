@@ -18,6 +18,8 @@ export type SoundTimbre =
   | 'triangle' | 'sine' | 'square' | 'sawtooth'
   | 'woodblock' | 'cowbell' | 'hihat' | 'rim' | 'clave' | 'click';
 
+export type PadMode = 'sampler' | 'loop';
+
 export interface MetronomeSettings {
   bpm: number;
   timeSignature: string;
@@ -32,8 +34,10 @@ export interface PadConfig {
   name: string;
   volume: number;
   pan: number;
+  mode: PadMode;
   audioBuffer?: AudioBuffer | null;
   fileName?: string;
+  audioUrl?: string;
 }
 
 export type AppMode = 'free' | 'setlist';

@@ -16,7 +16,7 @@ interface SetlistManagerProps {
   onSelectSong: (song: Song) => void;
 }
 
-const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8'];
+const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '7/4', '12/8', '13/8'];
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   playlists, setPlaylists, activePlaylistId, setActivePlaylistId, activeSongId, onSelectSong,
@@ -100,21 +100,27 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     const XLSX = await import('xlsx');
     const data = await file.arrayBuffer();
     const wb = XLSX.read(data);
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<any>(ws);
-    const songs: Song[] = rows.map((r: any) => ({
-      id: crypto.randomUUID(),
-      name: r.Nome || r.name || 'Sem nome',
-      bpm: Number(r.BPM || r.bpm) || 120,
-      timeSignature: r.Compasso || r.timeSignature || '4/4',
-      notes: r.Notas || r.notes || '',
-    }));
-    if (activePlaylist) {
-      updateSongs([...activePlaylist.songs, ...songs]);
-    } else {
-      const pl: Playlist = { id: crypto.randomUUID(), name: file.name.replace('.xlsx', ''), songs };
-      setPlaylists(prev => [...prev, pl]);
-      setActivePlaylistId(pl.id);
+
+    // Multi-sheet: each sheet becomes a playlist
+    const newPlaylists: Playlist[] = [];
+    for (const sheetName of wb.SheetNames) {
+      const ws = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json<any>(ws);
+      const songs: Song[] = rows.map((r: any) => ({
+        id: crypto.randomUUID(),
+        name: r.Nome || r.name || r.Name || 'Sem nome',
+        bpm: Number(r.BPM || r.bpm) || 120,
+        timeSignature: r.Compasso || r.timeSignature || r['Time Signature'] || '4/4',
+        notes: r.Notas || r.notes || r.Notes || '',
+      }));
+      if (songs.length > 0) {
+        newPlaylists.push({ id: crypto.randomUUID(), name: sheetName, songs });
+      }
+    }
+
+    if (newPlaylists.length > 0) {
+      setPlaylists(prev => [...prev, ...newPlaylists]);
+      setActivePlaylistId(newPlaylists[0].id);
     }
     e.target.value = '';
   };
@@ -169,7 +175,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
 
       {/* Song list */}
       {activePlaylist && (
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
           {activePlaylist.songs.map((song, idx) => (
             <div
               key={song.id}
@@ -200,6 +206,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
               ) : (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground w-5 text-right">{idx + 1}</span>
                     <Music className="w-4 h-4 text-muted-foreground" />
                     <div>
                       <div className="font-medium text-sm">{song.name}</div>

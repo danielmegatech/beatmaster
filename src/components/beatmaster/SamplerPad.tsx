@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Square, Volume2, Settings, Upload, Link, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Square, Volume2, Settings, Upload, Link, ToggleLeft, ToggleRight, ChevronDown, ChevronUp } from 'lucide-react';
 import type { PadConfig, PadMode } from '@/types/beatmaster';
 import { defaultPadConfigs } from '@/data/defaultPresets';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -33,6 +33,7 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
   const [configPadId, setConfigPadId] = useState<number | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [editName, setEditName] = useState('');
+  const [mixerOpen, setMixerOpen] = useState(false);
 
   const activeSourcesRef = useRef<Record<number, { source: AudioBufferSourceNode; gain: GainNode }>>({});
   const loopSourcesRef = useRef<Record<number, { source: AudioBufferSourceNode; interval: number }>>({});
@@ -100,7 +101,6 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
   }, [getAudioContext]);
 
   const toggleLoop = useCallback((padId: number) => {
-    // If already playing, stop
     if (loopSourcesRef.current[padId]) {
       loopSourcesRef.current[padId].source.stop();
       clearInterval(loopSourcesRef.current[padId].interval);
@@ -201,18 +201,18 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
   const configPad = configPadId !== null ? padConfigs.find(p => p.id === configPadId) : null;
 
   return (
-    <div className="glass rounded-2xl p-6 space-y-4">
+    <div className="glass rounded-2xl p-4 sm:p-6 space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-primary">🎹 Sampler</h2>
-        <Button variant="destructive" size="sm" onClick={stopAll} className="text-xs gap-1">
+        <h2 className="text-base sm:text-lg font-semibold text-primary">🎹 Sampler</h2>
+        <Button variant="destructive" size="sm" onClick={stopAll} className="text-xs gap-1 h-7 sm:h-8">
           <Square className="w-3 h-3" /> Stop All
         </Button>
       </div>
 
-      {/* 5 Pads in a row */}
-      <div className="grid grid-cols-5 gap-2">
+      {/* 5 Pads - responsive grid */}
+      <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
         {padConfigs.map((pad, i) => (
-          <div key={pad.id} className="relative flex flex-col items-center gap-1">
+          <div key={pad.id} className="relative flex flex-col items-center gap-0.5 sm:gap-1">
             <button
               onMouseDown={() => handlePadInteraction(pad.id, 'down')}
               onMouseUp={() => handlePadInteraction(pad.id, 'up')}
@@ -220,63 +220,78 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
               onTouchStart={(e) => { e.preventDefault(); handlePadInteraction(pad.id, 'down'); }}
               onTouchEnd={(e) => { e.preventDefault(); handlePadInteraction(pad.id, 'up'); }}
               className={cn(
-                `w-full aspect-square bg-gradient-to-b border rounded-xl flex flex-col items-center justify-center font-bold text-xs transition-all active:scale-95 active:brightness-125`,
+                `w-full aspect-square bg-gradient-to-b border rounded-lg sm:rounded-xl flex flex-col items-center justify-center font-bold transition-all active:scale-95 active:brightness-125`,
+                'text-[10px] sm:text-xs',
                 padColors[i],
                 !buffers[pad.id] && 'opacity-40'
               )}
             >
-              <span className="truncate w-full px-1">{pad.fileName || pad.name}</span>
-              <span className="text-[9px] text-muted-foreground mt-0.5">
+              <span className="truncate w-full px-0.5 sm:px-1">{pad.fileName || pad.name}</span>
+              <span className="text-[8px] sm:text-[9px] text-muted-foreground mt-0.5">
                 {pad.mode === 'sampler' ? 'HOLD' : 'LOOP'}
               </span>
-              <span className="text-[9px] text-muted-foreground opacity-60">[{i + 1}]</span>
+              <span className="text-[8px] sm:text-[9px] text-muted-foreground opacity-60">[{i + 1}]</span>
             </button>
             {/* Loop progress */}
             {loopProgress[pad.id] !== undefined && (
-              <div className="absolute bottom-8 left-0 right-0 h-1 bg-muted rounded overflow-hidden mx-1">
+              <div className="absolute bottom-6 sm:bottom-8 left-0 right-0 h-1 bg-muted rounded overflow-hidden mx-0.5 sm:mx-1">
                 <div className="h-full bg-primary transition-all" style={{ width: `${(loopProgress[pad.id] || 0) * 100}%` }} />
               </div>
             )}
             {/* Settings icon */}
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openConfig(pad.id)}>
-              <Settings className="w-3 h-3" />
+            <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={() => openConfig(pad.id)}>
+              <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             </Button>
           </div>
         ))}
       </div>
 
-      {/* Per-pad quick controls */}
-      <div className="space-y-2">
-        {padConfigs.map((pad) => (
-          <div key={pad.id} className="flex items-center gap-2 text-xs">
-            <span className="w-14 text-muted-foreground truncate">{pad.name}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 text-[9px] px-1"
-              onClick={() => togglePadMode(pad.id)}
-            >
-              {pad.mode === 'sampler' ? <ToggleLeft className="w-3 h-3" /> : <ToggleRight className="w-3 h-3 text-primary" />}
-            </Button>
-            <Volume2 className="w-3 h-3 text-muted-foreground" />
-            <Slider
-              value={[pad.volume]}
-              onValueChange={([v]) => setPadConfigs(prev => prev.map(p => p.id === pad.id ? { ...p, volume: v } : p))}
-              min={0} max={1} step={0.01} className="flex-1"
-            />
-            <span className="text-muted-foreground text-[10px] w-4">Pan</span>
-            <Slider
-              value={[pad.pan]}
-              onValueChange={([v]) => setPadConfigs(prev => prev.map(p => p.id === pad.id ? { ...p, pan: v } : p))}
-              min={-1} max={1} step={0.01} className="w-20"
-            />
+      {/* Collapsible Mixer */}
+      <div>
+        <button
+          onClick={() => setMixerOpen(!mixerOpen)}
+          className="flex items-center gap-2 w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1.5 px-1"
+        >
+          {mixerOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          <span className="font-medium">Mixer</span>
+          <div className="flex-1 h-px bg-border" />
+        </button>
+
+        {mixerOpen && (
+          <div className="space-y-1.5 pt-1 animate-in slide-in-from-top-2 duration-200">
+            {padConfigs.map((pad) => (
+              <div key={pad.id} className="flex items-center gap-1.5 sm:gap-2 text-xs">
+                <span className="w-12 sm:w-14 text-muted-foreground truncate text-[10px] sm:text-xs">{pad.name}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 px-1 shrink-0"
+                  onClick={() => togglePadMode(pad.id)}
+                  title={pad.mode === 'sampler' ? 'Sampler (Hold)' : 'Loop'}
+                >
+                  {pad.mode === 'sampler' ? <ToggleLeft className="w-3 h-3" /> : <ToggleRight className="w-3 h-3 text-primary" />}
+                </Button>
+                <Volume2 className="w-3 h-3 text-muted-foreground shrink-0" />
+                <Slider
+                  value={[pad.volume]}
+                  onValueChange={([v]) => setPadConfigs(prev => prev.map(p => p.id === pad.id ? { ...p, volume: v } : p))}
+                  min={0} max={1} step={0.01} className="flex-1 min-w-0"
+                />
+                <span className="text-muted-foreground text-[10px] w-4 shrink-0">Pan</span>
+                <Slider
+                  value={[pad.pan]}
+                  onValueChange={([v]) => setPadConfigs(prev => prev.map(p => p.id === pad.id ? { ...p, pan: v } : p))}
+                  min={-1} max={1} step={0.01} className="w-16 sm:w-20 shrink-0"
+                />
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
       {/* Config Modal */}
       <Dialog open={configPadId !== null} onOpenChange={(open) => { if (!open) setConfigPadId(null); }}>
-        <DialogContent className="glass border-border">
+        <DialogContent className="glass border-border max-w-sm">
           <DialogHeader>
             <DialogTitle>Configurar Pad: {configPad?.name}</DialogTitle>
           </DialogHeader>

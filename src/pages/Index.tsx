@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useMetronome } from '@/hooks/useMetronome';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -7,9 +7,19 @@ import SetlistManager from '@/components/beatmaster/SetlistManager';
 import SamplerPad from '@/components/beatmaster/SamplerPad';
 import FooterPlayer from '@/components/beatmaster/FooterPlayer';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Palette } from 'lucide-react';
 import { defaultPlaylists } from '@/data/defaultPresets';
 import type { Playlist, Song, AppMode } from '@/types/beatmaster';
+
+type SkinColor = 'purple' | 'blue' | 'green' | 'red' | 'orange';
+
+const skins: { id: SkinColor; label: string; color: string }[] = [
+  { id: 'purple', label: 'Violeta', color: 'bg-purple-500' },
+  { id: 'blue', label: 'Azul', color: 'bg-blue-500' },
+  { id: 'green', label: 'Verde', color: 'bg-emerald-500' },
+  { id: 'red', label: 'Vermelho', color: 'bg-red-500' },
+  { id: 'orange', label: 'Laranja', color: 'bg-orange-500' },
+];
 
 const Index = () => {
   const metro = useMetronome();
@@ -17,7 +27,9 @@ const Index = () => {
   const [activePlaylistId, setActivePlaylistId] = useLocalStorage<string | null>('bm-active-playlist', null);
   const [activeSongId, setActiveSongId] = useLocalStorage<string | null>('bm-active-song', null);
   const [mode, setMode] = useLocalStorage<AppMode>('bm-mode', 'free');
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useLocalStorage<boolean>('bm-dark-mode', true);
+  const [skin, setSkin] = useLocalStorage<SkinColor>('bm-skin', 'purple');
+  const [showSkinPicker, setShowSkinPicker] = useState(false);
   const [padTrigger, setPadTrigger] = useState<{ padId: number; type: 'down' | 'up' } | null>(null);
 
   // Seed default playlists on first load
@@ -28,10 +40,16 @@ const Index = () => {
     }
   }, []);
 
-  // Theme toggle
+  // Theme + skin toggle
   useEffect(() => {
-    document.documentElement.classList.toggle('light', !isDark);
-  }, [isDark]);
+    const root = document.documentElement;
+    root.classList.toggle('light', !isDark);
+    // Remove all skin classes
+    root.classList.remove('skin-blue', 'skin-green', 'skin-red', 'skin-orange');
+    if (skin !== 'purple') {
+      root.classList.add(`skin-${skin}`);
+    }
+  }, [isDark, skin]);
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || null;
   const activeSong = activePlaylist?.songs.find(s => s.id === activeSongId) || null;
@@ -74,23 +92,49 @@ const Index = () => {
   });
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-20 sm:pb-24">
       {/* Header */}
-      <header className="flex items-center justify-between py-6 px-4 max-w-6xl mx-auto">
+      <header className="flex items-center justify-between py-4 sm:py-6 px-3 sm:px-4 max-w-6xl mx-auto">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
             🎵 BeatMaster
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Metrônomo · Setlist · Sampler</p>
+          <p className="text-[10px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Metrônomo · Setlist · Sampler</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="h-9 w-9">
-          {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </Button>
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Skin picker */}
+          <div className="relative">
+            <Button variant="ghost" size="icon" onClick={() => setShowSkinPicker(!showSkinPicker)} className="h-8 w-8 sm:h-9 sm:w-9">
+              <Palette className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
+            {showSkinPicker && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowSkinPicker(false)} />
+                <div className="absolute right-0 top-full mt-2 z-50 glass rounded-xl p-3 min-w-[140px] space-y-2">
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Skin</p>
+                  {skins.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => { setSkin(s.id); setShowSkinPicker(false); }}
+                      className={`flex items-center gap-2 w-full text-xs py-1.5 px-2 rounded-lg transition-colors hover:bg-secondary/50 ${skin === s.id ? 'bg-secondary text-foreground' : 'text-muted-foreground'}`}
+                    >
+                      <div className={`w-3 h-3 rounded-full ${s.color}`} />
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="h-8 w-8 sm:h-9 sm:w-9">
+            {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
+          </Button>
+        </div>
       </header>
 
-      {/* Main: Desktop = left col fixed metronome, right col sampler+setlist */}
-      <main className="max-w-6xl mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6">
+      {/* Main */}
+      <main className="max-w-6xl mx-auto px-3 sm:px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] xl:grid-cols-[380px_1fr] gap-4 sm:gap-6">
           {/* Left: Metronome (sticky on desktop) */}
           <div className="lg:sticky lg:top-4 lg:self-start">
             <Metronome
@@ -115,7 +159,7 @@ const Index = () => {
           </div>
 
           {/* Right: Sampler + Setlist */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <SamplerPad
               getAudioContext={metro.getAudioContext}
               getMasterGain={metro.getMasterGain}

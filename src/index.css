@@ -3,37 +3,28 @@
 @tailwind utilities;
 
 @layer base {
+  /* Dark Purple (Default) */
   :root {
     --background: 270 50% 5%;
     --foreground: 270 20% 95%;
-
     --card: 270 40% 10%;
     --card-foreground: 270 20% 95%;
-
     --popover: 270 40% 10%;
     --popover-foreground: 270 20% 95%;
-
     --primary: 270 70% 60%;
     --primary-foreground: 270 20% 98%;
-
     --secondary: 270 30% 18%;
     --secondary-foreground: 270 20% 90%;
-
     --muted: 270 25% 15%;
     --muted-foreground: 270 15% 55%;
-
     --accent: 280 80% 65%;
     --accent-foreground: 270 20% 98%;
-
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 270 30% 20%;
     --input: 270 30% 20%;
     --ring: 270 70% 60%;
-
     --radius: 0.75rem;
-
     --sidebar-background: 270 40% 8%;
     --sidebar-foreground: 270 20% 90%;
     --sidebar-primary: 270 70% 60%;
@@ -42,41 +33,229 @@
     --sidebar-accent-foreground: 270 20% 90%;
     --sidebar-border: 270 30% 20%;
     --sidebar-ring: 270 70% 60%;
-
     --glow-primary: 270 70% 60%;
     --glow-accent: 280 80% 65%;
     --glow-beat: 45 90% 60%;
     --glow-green: 142 70% 50%;
+    --glass-bg: 270 40% 10%;
+    --glass-border: 270 30% 25%;
+    --body-gradient-top: 270 50% 12%;
+    --body-gradient-bottom: 270 50% 5%;
   }
 
+  /* Light Purple */
   .light {
     --background: 260 30% 96%;
     --foreground: 270 40% 15%;
-
     --card: 260 30% 100%;
     --card-foreground: 270 40% 15%;
-
     --popover: 260 30% 100%;
     --popover-foreground: 270 40% 15%;
-
     --primary: 270 70% 55%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 270 20% 90%;
     --secondary-foreground: 270 40% 25%;
-
     --muted: 270 15% 92%;
     --muted-foreground: 270 15% 45%;
-
     --accent: 280 70% 60%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 270 20% 85%;
     --input: 270 20% 85%;
     --ring: 270 70% 55%;
+    --glass-bg: 0 0% 100%;
+    --glass-border: 270 20% 85%;
+    --body-gradient-top: 260 30% 98%;
+    --body-gradient-bottom: 260 30% 94%;
+  }
+
+  /* Skin: Midnight Blue */
+  .skin-blue {
+    --background: 220 50% 5%;
+    --foreground: 220 20% 95%;
+    --card: 220 40% 10%;
+    --card-foreground: 220 20% 95%;
+    --popover: 220 40% 10%;
+    --popover-foreground: 220 20% 95%;
+    --primary: 210 80% 55%;
+    --primary-foreground: 220 20% 98%;
+    --secondary: 220 30% 18%;
+    --secondary-foreground: 220 20% 90%;
+    --muted: 220 25% 15%;
+    --muted-foreground: 220 15% 55%;
+    --accent: 200 80% 60%;
+    --accent-foreground: 220 20% 98%;
+    --border: 220 30% 20%;
+    --input: 220 30% 20%;
+    --ring: 210 80% 55%;
+    --glass-bg: 220 40% 10%;
+    --glass-border: 220 30% 25%;
+    --body-gradient-top: 220 50% 12%;
+    --body-gradient-bottom: 220 50% 5%;
+  }
+
+  .skin-blue.light {
+    --background: 215 30% 96%;
+    --foreground: 220 40% 15%;
+    --card: 215 30% 100%;
+    --card-foreground: 220 40% 15%;
+    --popover: 215 30% 100%;
+    --popover-foreground: 220 40% 15%;
+    --primary: 210 80% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 20% 90%;
+    --secondary-foreground: 220 40% 25%;
+    --muted: 220 15% 92%;
+    --muted-foreground: 220 15% 45%;
+    --border: 220 20% 85%;
+    --input: 220 20% 85%;
+    --ring: 210 80% 50%;
+    --glass-bg: 0 0% 100%;
+    --glass-border: 220 20% 85%;
+    --body-gradient-top: 215 30% 98%;
+    --body-gradient-bottom: 215 30% 94%;
+  }
+
+  /* Skin: Emerald Green */
+  .skin-green {
+    --background: 150 50% 4%;
+    --foreground: 150 20% 95%;
+    --card: 150 40% 8%;
+    --card-foreground: 150 20% 95%;
+    --popover: 150 40% 8%;
+    --popover-foreground: 150 20% 95%;
+    --primary: 160 70% 45%;
+    --primary-foreground: 150 20% 98%;
+    --secondary: 150 30% 15%;
+    --secondary-foreground: 150 20% 90%;
+    --muted: 150 25% 12%;
+    --muted-foreground: 150 15% 50%;
+    --accent: 140 80% 50%;
+    --accent-foreground: 150 20% 98%;
+    --border: 150 30% 18%;
+    --input: 150 30% 18%;
+    --ring: 160 70% 45%;
+    --glass-bg: 150 40% 8%;
+    --glass-border: 150 30% 22%;
+    --body-gradient-top: 150 50% 10%;
+    --body-gradient-bottom: 150 50% 4%;
+  }
+
+  .skin-green.light {
+    --background: 150 30% 96%;
+    --foreground: 150 40% 15%;
+    --card: 150 30% 100%;
+    --card-foreground: 150 40% 15%;
+    --popover: 150 30% 100%;
+    --popover-foreground: 150 40% 15%;
+    --primary: 160 70% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 20% 90%;
+    --secondary-foreground: 150 40% 25%;
+    --muted: 150 15% 92%;
+    --muted-foreground: 150 15% 45%;
+    --border: 150 20% 85%;
+    --input: 150 20% 85%;
+    --ring: 160 70% 40%;
+    --glass-bg: 0 0% 100%;
+    --glass-border: 150 20% 85%;
+    --body-gradient-top: 150 30% 98%;
+    --body-gradient-bottom: 150 30% 94%;
+  }
+
+  /* Skin: Crimson Red */
+  .skin-red {
+    --background: 0 50% 5%;
+    --foreground: 0 20% 95%;
+    --card: 0 40% 10%;
+    --card-foreground: 0 20% 95%;
+    --popover: 0 40% 10%;
+    --popover-foreground: 0 20% 95%;
+    --primary: 0 75% 55%;
+    --primary-foreground: 0 20% 98%;
+    --secondary: 0 30% 18%;
+    --secondary-foreground: 0 20% 90%;
+    --muted: 0 25% 15%;
+    --muted-foreground: 0 15% 55%;
+    --accent: 15 80% 55%;
+    --accent-foreground: 0 20% 98%;
+    --border: 0 30% 20%;
+    --input: 0 30% 20%;
+    --ring: 0 75% 55%;
+    --glass-bg: 0 40% 10%;
+    --glass-border: 0 30% 25%;
+    --body-gradient-top: 0 50% 12%;
+    --body-gradient-bottom: 0 50% 5%;
+  }
+
+  .skin-red.light {
+    --background: 0 30% 96%;
+    --foreground: 0 40% 15%;
+    --card: 0 30% 100%;
+    --card-foreground: 0 40% 15%;
+    --popover: 0 30% 100%;
+    --popover-foreground: 0 40% 15%;
+    --primary: 0 75% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 20% 90%;
+    --secondary-foreground: 0 40% 25%;
+    --muted: 0 15% 92%;
+    --muted-foreground: 0 15% 45%;
+    --border: 0 20% 85%;
+    --input: 0 20% 85%;
+    --ring: 0 75% 50%;
+    --glass-bg: 0 0% 100%;
+    --glass-border: 0 20% 85%;
+    --body-gradient-top: 0 30% 98%;
+    --body-gradient-bottom: 0 30% 94%;
+  }
+
+  /* Skin: Sunset Orange */
+  .skin-orange {
+    --background: 25 50% 5%;
+    --foreground: 25 20% 95%;
+    --card: 25 40% 10%;
+    --card-foreground: 25 20% 95%;
+    --popover: 25 40% 10%;
+    --popover-foreground: 25 20% 95%;
+    --primary: 30 90% 50%;
+    --primary-foreground: 25 20% 5%;
+    --secondary: 25 30% 18%;
+    --secondary-foreground: 25 20% 90%;
+    --muted: 25 25% 15%;
+    --muted-foreground: 25 15% 55%;
+    --accent: 40 90% 55%;
+    --accent-foreground: 25 20% 5%;
+    --border: 25 30% 20%;
+    --input: 25 30% 20%;
+    --ring: 30 90% 50%;
+    --glass-bg: 25 40% 10%;
+    --glass-border: 25 30% 25%;
+    --body-gradient-top: 25 50% 12%;
+    --body-gradient-bottom: 25 50% 5%;
+  }
+
+  .skin-orange.light {
+    --background: 30 30% 96%;
+    --foreground: 25 40% 15%;
+    --card: 30 30% 100%;
+    --card-foreground: 25 40% 15%;
+    --popover: 30 30% 100%;
+    --popover-foreground: 25 40% 15%;
+    --primary: 30 90% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 25 20% 90%;
+    --secondary-foreground: 25 40% 25%;
+    --muted: 25 15% 92%;
+    --muted-foreground: 25 15% 45%;
+    --border: 25 20% 85%;
+    --input: 25 20% 85%;
+    --ring: 30 90% 45%;
+    --glass-bg: 0 0% 100%;
+    --glass-border: 25 20% 85%;
+    --body-gradient-top: 30 30% 98%;
+    --body-gradient-bottom: 30 30% 94%;
   }
 }
 
@@ -88,38 +267,30 @@
     @apply bg-background text-foreground;
     background-image: radial-gradient(
       ellipse at top,
-      hsl(270 50% 12%) 0%,
-      hsl(270 50% 5%) 60%
+      hsl(var(--body-gradient-top)) 0%,
+      hsl(var(--body-gradient-bottom)) 60%
     );
     min-height: 100vh;
-  }
-  .light body,
-  body:is(.light *) {
-    background-image: radial-gradient(
-      ellipse at top,
-      hsl(260 30% 98%) 0%,
-      hsl(260 30% 94%) 60%
-    );
   }
 }
 
 @layer utilities {
   .glass {
-    background: hsl(270 40% 10% / 0.6);
+    background: hsl(var(--glass-bg) / 0.6);
     backdrop-filter: blur(16px);
-    border: 1px solid hsl(270 30% 25% / 0.4);
-    box-shadow: 0 8px 32px hsl(270 50% 5% / 0.4);
+    border: 1px solid hsl(var(--glass-border) / 0.4);
+    box-shadow: 0 8px 32px hsl(var(--background) / 0.4);
   }
   .light .glass {
-    background: hsl(0 0% 100% / 0.7);
-    border: 1px solid hsl(270 20% 85% / 0.6);
-    box-shadow: 0 8px 32px hsl(270 30% 80% / 0.2);
+    background: hsl(var(--glass-bg) / 0.7);
+    border: 1px solid hsl(var(--glass-border) / 0.6);
+    box-shadow: 0 8px 32px hsl(var(--glass-border) / 0.2);
   }
   .glow-purple {
-    box-shadow: 0 0 20px hsl(270 70% 60% / 0.4), 0 0 60px hsl(270 70% 60% / 0.1);
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.4), 0 0 60px hsl(var(--primary) / 0.1);
   }
   .glow-accent {
-    box-shadow: 0 0 20px hsl(280 80% 65% / 0.4), 0 0 60px hsl(280 80% 65% / 0.1);
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.4), 0 0 60px hsl(var(--accent) / 0.1);
   }
   .glow-beat {
     box-shadow: 0 0 16px hsl(45 90% 60% / 0.6), 0 0 40px hsl(45 90% 60% / 0.2);

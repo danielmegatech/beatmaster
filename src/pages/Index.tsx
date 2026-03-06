@@ -8,7 +8,7 @@ import SamplerPad from '@/components/beatmaster/SamplerPad';
 import FooterPlayer from '@/components/beatmaster/FooterPlayer';
 import { Button } from '@/components/ui/button';
 import { Sun, Moon } from 'lucide-react';
-import { defaultPlaylistSongs, DEFAULT_PLAYLIST_NAME } from '@/data/defaultPresets';
+import { defaultPlaylists } from '@/data/defaultPresets';
 import type { Playlist, Song, AppMode } from '@/types/beatmaster';
 
 const Index = () => {
@@ -20,16 +20,11 @@ const Index = () => {
   const [isDark, setIsDark] = useState(true);
   const [padTrigger, setPadTrigger] = useState<{ padId: number; type: 'down' | 'up' } | null>(null);
 
-  // Seed default playlist on first load
+  // Seed default playlists on first load
   useEffect(() => {
     if (playlists.length === 0) {
-      const defaultPlaylist: Playlist = {
-        id: crypto.randomUUID(),
-        name: DEFAULT_PLAYLIST_NAME,
-        songs: defaultPlaylistSongs,
-      };
-      setPlaylists([defaultPlaylist]);
-      setActivePlaylistId(defaultPlaylist.id);
+      setPlaylists(defaultPlaylists);
+      setActivePlaylistId(defaultPlaylists[0].id);
     }
   }, []);
 

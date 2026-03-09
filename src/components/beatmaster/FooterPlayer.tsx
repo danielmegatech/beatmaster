@@ -138,6 +138,13 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
           >
             {mode === 'free' ? 'Livre' : 'Setlist'}
           </Button>
+
+          {/* Song name / mode display */}
+          <div className="hidden lg:block min-w-0 w-36 text-right">
+            <div className="text-xs text-muted-foreground truncate">
+              {activeSong ? `♪ ${activeSong.name}` : 'Modo Livre'}
+            </div>
+          </div>
         </div>
       </div>
     </div>

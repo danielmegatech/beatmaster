@@ -160,11 +160,6 @@ const Index = () => {
 
           {/* Right: Sampler + Setlist */}
           <div className="space-y-4 sm:space-y-6">
-            <SamplerPad
-              getAudioContext={metro.getAudioContext}
-              getMasterGain={metro.getMasterGain}
-              padTrigger={padTrigger}
-            />
             <SetlistManager
               playlists={playlists}
               setPlaylists={setPlaylists}
@@ -172,6 +167,11 @@ const Index = () => {
               setActivePlaylistId={setActivePlaylistId}
               activeSongId={activeSongId}
               onSelectSong={onSelectSong}
+            />
+            <SamplerPad
+              getAudioContext={metro.getAudioContext}
+              getMasterGain={metro.getMasterGain}
+              padTrigger={padTrigger}
             />
           </div>
         </div>

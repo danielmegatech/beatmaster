@@ -44,7 +44,6 @@ const Index = () => {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('light', !isDark);
-    // Remove all skin classes
     root.classList.remove('skin-blue', 'skin-green', 'skin-red', 'skin-orange');
     if (skin !== 'purple') {
       root.classList.add(`skin-${skin}`);
@@ -155,10 +154,13 @@ const Index = () => {
               beatsPerMeasure={metro.beatsPerMeasure}
               toggle={metro.toggle}
               tapTempo={metro.tapTempo}
+              countIn={metro.countIn}
+              setCountIn={metro.setCountIn}
+              isCountingIn={metro.isCountingIn}
             />
           </div>
 
-          {/* Right: Sampler + Setlist */}
+          {/* Right: Setlist + Sampler */}
           <div className="space-y-4 sm:space-y-6">
             <SetlistManager
               playlists={playlists}
@@ -193,6 +195,8 @@ const Index = () => {
         activeSong={activeSong}
         onPrev={() => navigateSong(-1)}
         onNext={() => navigateSong(1)}
+        countIn={metro.countIn}
+        setCountIn={metro.setCountIn}
       />
     </div>
   );

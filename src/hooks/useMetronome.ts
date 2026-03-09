@@ -149,12 +149,16 @@ export function useMetronome() {
   const [pan, setPan] = useState(0);
   const [currentBeat, setCurrentBeat] = useState(-1);
   const [masterVolume, setMasterVolume] = useState(0.8);
+  const [countIn, setCountIn] = useState(false);
+  const [isCountingIn, setIsCountingIn] = useState(false);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
   const timerRef = useRef<number | null>(null);
   const nextBeatTimeRef = useRef(0);
   const currentBeatRef = useRef(0);
+  const countInBeatRef = useRef(0);
+  const isCountInPhaseRef = useRef(false);
   const scheduleAheadTime = 0.1;
   const lookahead = 25; // ms
 
@@ -165,6 +169,7 @@ export function useMetronome() {
   const soundRef = useRef(sound);
   const volumeRef = useRef(volume);
   const panRef = useRef(pan);
+  const countInRef = useRef(countIn);
 
   useEffect(() => { bpmRef.current = bpm; }, [bpm]);
   useEffect(() => { tsRef.current = timeSignature; }, [timeSignature]);
@@ -172,6 +177,7 @@ export function useMetronome() {
   useEffect(() => { soundRef.current = sound; }, [sound]);
   useEffect(() => { volumeRef.current = volume; }, [volume]);
   useEffect(() => { panRef.current = pan; }, [pan]);
+  useEffect(() => { countInRef.current = countIn; }, [countIn]);
   useEffect(() => {
     if (masterGainRef.current) {
       masterGainRef.current.gain.value = masterVolume;
@@ -196,6 +202,29 @@ export function useMetronome() {
     const mg = masterGainRef.current!;
     while (nextBeatTimeRef.current < ctx.currentTime + scheduleAheadTime) {
       const beats = getBeatsPerMeasure(tsRef.current);
+
+      // Count-in phase: play accent clicks only, one per beat
+      if (isCountInPhaseRef.current) {
+        const isAccent = countInBeatRef.current === 0;
+        playClick(ctx, nextBeatTimeRef.current, isAccent, 'cowbell', volumeRef.current, panRef.current, mg);
+
+        const beatIdx = countInBeatRef.current;
+        const delay = Math.max(0, (nextBeatTimeRef.current - ctx.currentTime) * 1000);
+        setTimeout(() => setCurrentBeat(beatIdx), delay);
+
+        const secondsPerBeat = 60.0 / bpmRef.current;
+        nextBeatTimeRef.current += secondsPerBeat;
+        countInBeatRef.current++;
+
+        if (countInBeatRef.current >= beats) {
+          isCountInPhaseRef.current = false;
+          currentBeatRef.current = 0;
+          const d2 = Math.max(0, (nextBeatTimeRef.current - ctx.currentTime) * 1000);
+          setTimeout(() => setIsCountingIn(false), d2);
+        }
+        continue;
+      }
+
       const subMul = getSubdivisionMultiplier(subRef.current);
       const totalSubBeats = beats * subMul;
       const isMainBeat = currentBeatRef.current % subMul === 0;
@@ -207,7 +236,6 @@ export function useMetronome() {
       // Only update visual on main beats
       if (isMainBeat) {
         const beatIdx = mainBeatIndex;
-        // Use setTimeout to update state near the actual beat time
         const delay = Math.max(0, (nextBeatTimeRef.current - ctx.currentTime) * 1000);
         setTimeout(() => setCurrentBeat(beatIdx), delay);
       }
@@ -224,6 +252,16 @@ export function useMetronome() {
     nextBeatTimeRef.current = ctx.currentTime + 0.05;
     setIsPlaying(true);
     setCurrentBeat(0);
+
+    // Count-in
+    if (countInRef.current) {
+      isCountInPhaseRef.current = true;
+      countInBeatRef.current = 0;
+      setIsCountingIn(true);
+    } else {
+      isCountInPhaseRef.current = false;
+    }
+
     const loop = () => {
       scheduler();
       timerRef.current = window.setTimeout(loop, lookahead);
@@ -236,6 +274,8 @@ export function useMetronome() {
     timerRef.current = null;
     setIsPlaying(false);
     setCurrentBeat(-1);
+    setIsCountingIn(false);
+    isCountInPhaseRef.current = false;
   }, []);
 
   const toggle = useCallback(() => {
@@ -248,7 +288,6 @@ export function useMetronome() {
     const now = performance.now();
     tapTimesRef.current.push(now);
     if (tapTimesRef.current.length > 5) tapTimesRef.current.shift();
-    // Reset if gap > 2s
     if (tapTimesRef.current.length >= 2) {
       const last = tapTimesRef.current[tapTimesRef.current.length - 1];
       const prev = tapTimesRef.current[tapTimesRef.current.length - 2];
@@ -280,6 +319,7 @@ export function useMetronome() {
     subdivision, setSubdivision, sound, setSound,
     volume, setVolume, pan, setPan,
     currentBeat, masterVolume, setMasterVolume,
+    countIn, setCountIn, isCountingIn,
     start, stop, toggle, tapTempo,
     getAudioContext, getMasterGain,
     beatsPerMeasure: getBeatsPerMeasure(timeSignature),

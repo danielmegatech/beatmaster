@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Trash2, Edit2, Check, X, Download, Upload, ChevronUp, ChevronDown, Music, Search } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Download, Upload, ChevronUp, ChevronDown, Music, Search, Clock, Coffee } from 'lucide-react';
 import type { Song, Playlist } from '@/types/beatmaster';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +19,23 @@ interface SetlistManagerProps {
 
 const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '7/4', '9/8', '12/8', '13/8'];
 
+function formatDuration(seconds?: number): string {
+  if (!seconds) return '';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function parseDuration(str: string): number | undefined {
+  if (!str) return undefined;
+  const parts = str.split(':');
+  if (parts.length === 2) {
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+  }
+  const n = parseInt(str);
+  return isNaN(n) ? undefined : n;
+}
+
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   playlists, setPlaylists, activePlaylistId, setActivePlaylistId, activeSongId, onSelectSong,
 }) => {
@@ -28,13 +45,18 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameVal, setRenameVal] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [durationInput, setDurationInput] = useState('');
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || null;
 
   const filteredSongs = activePlaylist?.songs.filter(s =>
     !searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (s.artist || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.notes.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
+
+  // Calculate total duration
+  const totalDuration = activePlaylist?.songs.reduce((acc, s) => acc + (s.duration || 0), 0) || 0;
 
   const addPlaylist = () => {
     const name = newPlaylistName.trim() || `Setlist ${playlists.length + 1}`;
@@ -60,8 +82,22 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
 
   const addSong = () => {
     if (!activePlaylist) return;
-    const song: Song = { id: crypto.randomUUID(), name: 'Nova Música', bpm: 120, timeSignature: '4/4', notes: '' };
+    const song: Song = { id: crypto.randomUUID(), name: 'Nova Música', bpm: 120, timeSignature: '4/4', notes: '', artist: '' };
     updateSongs([...activePlaylist.songs, song]);
+  };
+
+  const addPause = () => {
+    if (!activePlaylist) return;
+    const pause: Song = {
+      id: crypto.randomUUID(),
+      name: '☕ INTERVALO',
+      bpm: 0,
+      timeSignature: '4/4',
+      notes: 'Pausa de 5 minutos',
+      isPause: true,
+      duration: 300,
+    };
+    updateSongs([...activePlaylist.songs, pause]);
   };
 
   const deleteSong = (id: string) => {
@@ -72,11 +108,13 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   const startEdit = (song: Song) => {
     setEditingSongId(song.id);
     setEditForm(song);
+    setDurationInput(song.duration ? formatDuration(song.duration) : '');
   };
 
   const saveEdit = () => {
     if (!activePlaylist || !editingSongId) return;
-    updateSongs(activePlaylist.songs.map(s => s.id === editingSongId ? { ...s, ...editForm } as Song : s));
+    const duration = parseDuration(durationInput);
+    updateSongs(activePlaylist.songs.map(s => s.id === editingSongId ? { ...s, ...editForm, duration } as Song : s));
     setEditingSongId(null);
   };
 
@@ -90,15 +128,26 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   };
 
   const exportXlsx = async () => {
-    if (!activePlaylist) return;
+    // Export ALL playlists as multi-tab Excel
     const XLSX = await import('xlsx');
-    const data = activePlaylist.songs.map((s, i) => ({
-      '#': i + 1, Nome: s.name, BPM: s.bpm, Compasso: s.timeSignature, Notas: s.notes,
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, activePlaylist.name);
-    XLSX.writeFile(wb, `${activePlaylist.name}.xlsx`);
+    for (const pl of playlists) {
+      const data = pl.songs.map((s, i) => ({
+        '#': i + 1,
+        Nome: s.name,
+        Artista: s.artist || '',
+        BPM: s.bpm,
+        Compasso: s.timeSignature,
+        'Duração': s.duration ? formatDuration(s.duration) : '',
+        Notas: s.notes,
+        Pausa: s.isPause ? 'Sim' : '',
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      // Truncate sheet name to 31 chars (Excel limit)
+      const sheetName = pl.name.substring(0, 31);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    }
+    XLSX.writeFile(wb, 'BeatMaster_Setlists.xlsx');
   };
 
   const importXlsx = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,9 +164,12 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       const songs: Song[] = rows.map((r: any) => ({
         id: crypto.randomUUID(),
         name: r.Nome || r.name || r.Name || 'Sem nome',
+        artist: r.Artista || r.artist || r.Artist || '',
         bpm: Number(r.BPM || r.bpm) || 120,
         timeSignature: r.Compasso || r.timeSignature || r['Time Signature'] || '4/4',
+        duration: r['Duração'] ? parseDuration(String(r['Duração'])) : undefined,
         notes: r.Notas || r.notes || r.Notes || '',
+        isPause: (r.Pausa === 'Sim' || r.isPause === true) ? true : undefined,
       }));
       if (songs.length > 0) {
         newPlaylists.push({ id: crypto.randomUUID(), name: sheetName, songs });
@@ -170,8 +222,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
 
       {/* Import/Export + Search */}
       <div className="flex flex-wrap gap-2 items-center">
-        <Button variant="outline" size="sm" onClick={exportXlsx} disabled={!activePlaylist} className="text-[10px] sm:text-xs gap-1 h-7">
-          <Download className="w-3 h-3" /> Exportar
+        <Button variant="outline" size="sm" onClick={exportXlsx} disabled={playlists.length === 0} className="text-[10px] sm:text-xs gap-1 h-7">
+          <Download className="w-3 h-3" /> Exportar Tudo
         </Button>
         <label>
           <Button variant="outline" size="sm" asChild className="text-[10px] sm:text-xs gap-1 cursor-pointer h-7">
@@ -185,13 +237,21 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
             <Input
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Buscar música..."
+              placeholder="Buscar música ou artista..."
               className="h-7 text-xs pl-7"
             />
           </div>
         )}
         {activePlaylist && (
-          <span className="text-[10px] text-muted-foreground">{filteredSongs.length} músicas</span>
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <span>{filteredSongs.length} músicas</span>
+            {totalDuration > 0 && (
+              <span className="flex items-center gap-0.5">
+                <Clock className="w-2.5 h-2.5" />
+                {formatDuration(totalDuration)}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -205,21 +265,30 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 key={song.id}
                 className={cn(
                   'rounded-lg sm:rounded-xl p-2 sm:p-3 border transition-all cursor-pointer',
-                  activeSongId === song.id
-                    ? 'border-primary bg-primary/10 glow-purple'
-                    : 'border-border bg-muted/30 hover:bg-muted/50'
+                  song.isPause
+                    ? 'border-accent bg-accent/10 opacity-70'
+                    : activeSongId === song.id
+                      ? 'border-primary bg-primary/10 glow-purple'
+                      : 'border-border bg-muted/30 hover:bg-muted/50'
                 )}
-                onClick={() => { if (editingSongId !== song.id) onSelectSong(song); }}
+                onClick={() => { if (editingSongId !== song.id && !song.isPause) onSelectSong(song); }}
               >
                 {editingSongId === song.id ? (
                   <div className="space-y-2">
                     <Input value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="Nome" className="h-7 sm:h-8 text-xs sm:text-sm" />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input type="number" value={editForm.bpm || 120} onChange={e => setEditForm({ ...editForm, bpm: +e.target.value })} className="h-7 sm:h-8 text-xs sm:text-sm" />
+                    <Input value={editForm.artist || ''} onChange={e => setEditForm({ ...editForm, artist: e.target.value })} placeholder="Artista" className="h-7 sm:h-8 text-xs sm:text-sm" />
+                    <div className="grid grid-cols-3 gap-2">
+                      <Input type="number" value={editForm.bpm || 120} onChange={e => setEditForm({ ...editForm, bpm: +e.target.value })} placeholder="BPM" className="h-7 sm:h-8 text-xs sm:text-sm" />
                       <Select value={editForm.timeSignature || '4/4'} onValueChange={v => setEditForm({ ...editForm, timeSignature: v })}>
                         <SelectTrigger className="h-7 sm:h-8 text-xs sm:text-sm"><SelectValue /></SelectTrigger>
                         <SelectContent>{timeSignatures.map(ts => <SelectItem key={ts} value={ts}>{ts}</SelectItem>)}</SelectContent>
                       </Select>
+                      <Input
+                        value={durationInput}
+                        onChange={e => setDurationInput(e.target.value)}
+                        placeholder="m:ss"
+                        className="h-7 sm:h-8 text-xs sm:text-sm"
+                      />
                     </div>
                     <Textarea value={editForm.notes || ''} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Notas..." className="text-xs sm:text-sm min-h-[36px]" />
                     <div className="flex gap-1">
@@ -231,11 +300,23 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                       <span className="text-[10px] sm:text-xs text-muted-foreground w-4 sm:w-5 text-right shrink-0">{idx + 1}</span>
-                      <Music className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
+                      {song.isPause ? (
+                        <Coffee className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent shrink-0" />
+                      ) : (
+                        <Music className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
+                      )}
                       <div className="min-w-0">
                         <div className="font-medium text-xs sm:text-sm truncate">{song.name}</div>
                         <div className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                          {song.bpm} BPM · {song.timeSignature}{song.notes ? ` · ${song.notes}` : ''}
+                          {song.isPause
+                            ? formatDuration(song.duration)
+                            : <>
+                                {song.artist && <span className="text-primary/70">{song.artist} · </span>}
+                                {song.bpm} BPM · {song.timeSignature}
+                                {song.duration ? ` · ${formatDuration(song.duration)}` : ''}
+                                {song.notes ? ` · ${song.notes}` : ''}
+                              </>
+                          }
                         </div>
                       </div>
                     </div>
@@ -258,9 +339,14 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
               </div>
             );
           })}
-          <Button variant="outline" size="sm" onClick={addSong} className="w-full text-[10px] sm:text-xs gap-1 h-7 sm:h-8">
-            <Plus className="w-3 h-3" /> Adicionar Música
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={addSong} className="flex-1 text-[10px] sm:text-xs gap-1 h-7 sm:h-8">
+              <Plus className="w-3 h-3" /> Adicionar Música
+            </Button>
+            <Button variant="outline" size="sm" onClick={addPause} className="text-[10px] sm:text-xs gap-1 h-7 sm:h-8">
+              <Coffee className="w-3 h-3" /> Pausa
+            </Button>
+          </div>
         </div>
       )}
 

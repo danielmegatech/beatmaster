@@ -1,9 +1,10 @@
 import React from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Minus, Plus, Hand, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Pause, Minus, Plus, Hand, ChevronLeft, ChevronRight, Timer } from 'lucide-react';
 import BeatIndicator from './BeatIndicator';
 import type { Subdivision, SoundTimbre } from '@/types/beatmaster';
+import { cn } from '@/lib/utils';
 
 interface MetronomeProps {
   isPlaying: boolean;
@@ -23,6 +24,9 @@ interface MetronomeProps {
   beatsPerMeasure: number;
   toggle: () => void;
   tapTempo: () => void;
+  countIn: boolean;
+  setCountIn: (v: boolean) => void;
+  isCountingIn: boolean;
 }
 
 const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '7/4', '9/8', '12/8', '13/8'];
@@ -81,6 +85,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
     subdivision, setSubdivision, sound, setSound,
     volume, setVolume, pan, setPan,
     currentBeat, beatsPerMeasure, toggle, tapTempo,
+    countIn, setCountIn, isCountingIn,
   } = props;
 
   return (
@@ -88,10 +93,29 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
       {/* Header with play button */}
       <div className="flex items-center justify-between">
         <h2 className="text-base sm:text-lg font-semibold text-primary">🥁 Metrônomo</h2>
-        <Button onClick={toggle} size="icon" className="rounded-full w-10 h-10 sm:w-12 sm:h-12 glow-purple">
-          {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={countIn ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setCountIn(!countIn)}
+            className="text-xs h-8 gap-1"
+            title="Count-in: conta o compasso antes de iniciar"
+          >
+            <Timer className="w-3.5 h-3.5" />
+            {countIn ? 'Count ✓' : 'Count'}
+          </Button>
+          <Button onClick={toggle} size="icon" className="rounded-full w-10 h-10 sm:w-12 sm:h-12 glow-purple">
+            {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
+          </Button>
+        </div>
       </div>
+
+      {/* Count-in indicator */}
+      {isCountingIn && (
+        <div className="text-center py-2 rounded-lg bg-accent/20 border border-accent/40 animate-pulse">
+          <span className="text-sm font-bold text-accent">🔔 Count-in...</span>
+        </div>
+      )}
 
       {/* BPM Display */}
       <div className="text-center">
@@ -120,7 +144,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
         <BeatIndicator beatsPerMeasure={beatsPerMeasure} currentBeat={currentBeat} showLabels />
       </div>
 
-      {/* Nav selectors - stack on small screens */}
+      {/* Nav selectors */}
       <div className="space-y-3">
         <NavSelector
           items={timeSignatures}

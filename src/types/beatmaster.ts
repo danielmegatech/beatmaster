@@ -1,9 +1,12 @@
 export interface Song {
   id: string;
   name: string;
+  artist?: string;
   bpm: number;
   timeSignature: string;
+  duration?: number; // duration in seconds
   notes: string;
+  isPause?: boolean; // true for pause/interval items
 }
 
 export interface Playlist {

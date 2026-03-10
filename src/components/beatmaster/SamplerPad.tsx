@@ -210,9 +210,9 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
       </div>
 
       {/* 5 Pads - responsive grid with max size */}
-      <div className="grid grid-cols-5 gap-1.5 sm:gap-2 max-w-2xl mx-auto">
+      <div className="flex justify-center gap-1.5 sm:gap-2">
         {padConfigs.map((pad, i) => (
-          <div key={pad.id} className="relative flex flex-col items-center gap-0.5 sm:gap-1">
+          <div key={pad.id} className="relative flex flex-col items-center gap-0.5 sm:gap-1 w-16 sm:w-20 md:w-24 max-w-[100px]">
             <button
               onMouseDown={() => handlePadInteraction(pad.id, 'down')}
               onMouseUp={() => handlePadInteraction(pad.id, 'up')}
@@ -220,7 +220,7 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
               onTouchStart={(e) => { e.preventDefault(); handlePadInteraction(pad.id, 'down'); }}
               onTouchEnd={(e) => { e.preventDefault(); handlePadInteraction(pad.id, 'up'); }}
               className={cn(
-                `w-full aspect-square max-w-[120px] bg-gradient-to-b border rounded-lg sm:rounded-xl flex flex-col items-center justify-center font-bold transition-all active:scale-95 active:brightness-125`,
+                `w-full aspect-square bg-gradient-to-b border rounded-lg sm:rounded-xl flex flex-col items-center justify-center font-bold transition-all active:scale-95 active:brightness-125`,
                 'text-[10px] sm:text-xs',
                 padColors[i],
                 !buffers[pad.id] && 'opacity-40'

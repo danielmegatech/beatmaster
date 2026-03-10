@@ -29,6 +29,8 @@ const Index = () => {
   const [mode, setMode] = useLocalStorage<AppMode>('bm-mode', 'free');
   const [isDark, setIsDark] = useLocalStorage<boolean>('bm-dark-mode', true);
   const [skin, setSkin] = useLocalStorage<SkinColor>('bm-skin', 'purple');
+  const [countInMeasures, setCountInMeasures] = useLocalStorage<number>('bm-count-in-measures', 2);
+  const [countOutMeasures, setCountOutMeasures] = useLocalStorage<number>('bm-count-out-measures', 2);
   const [showSkinPicker, setShowSkinPicker] = useState(false);
   const [padTrigger, setPadTrigger] = useState<{ padId: number; type: 'down' | 'up' } | null>(null);
 
@@ -70,6 +72,19 @@ const Index = () => {
     }
   }, [activePlaylist, activeSongId, mode, onSelectSong]);
 
+  // Auto-advance when song duration ends
+  const handleSongEnd = useCallback(() => {
+    if (!activePlaylist || mode !== 'setlist') return;
+    const idx = activePlaylist.songs.findIndex(s => s.id === activeSongId);
+    const next = idx + 1;
+    if (next < activePlaylist.songs.length) {
+      onSelectSong(activePlaylist.songs[next]);
+    } else {
+      // End of playlist - stop
+      metro.stop();
+    }
+  }, [activePlaylist, activeSongId, mode, onSelectSong, metro]);
+
   const cyclePlaylist = useCallback(() => {
     if (playlists.length <= 1) return;
     const idx = playlists.findIndex(p => p.id === activePlaylistId);
@@ -101,7 +116,6 @@ const Index = () => {
           <p className="text-[10px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Metrônomo · Setlist · Sampler</p>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Skin picker */}
           <div className="relative">
             <Button variant="ghost" size="icon" onClick={() => setShowSkinPicker(!showSkinPicker)} className="h-8 w-8 sm:h-9 sm:w-9">
               <Palette className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -134,7 +148,6 @@ const Index = () => {
       {/* Main */}
       <main className="max-w-6xl mx-auto px-3 sm:px-4">
         <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] xl:grid-cols-[380px_1fr] gap-4 sm:gap-6">
-          {/* Left: Metronome (sticky on desktop) */}
           <div className="lg:sticky lg:top-4 lg:self-start">
             <Metronome
               isPlaying={metro.isPlaying}
@@ -160,7 +173,6 @@ const Index = () => {
             />
           </div>
 
-          {/* Right: Setlist + Sampler */}
           <div className="space-y-4 sm:space-y-6">
             <SetlistManager
               playlists={playlists}
@@ -197,6 +209,11 @@ const Index = () => {
         onNext={() => navigateSong(1)}
         countIn={metro.countIn}
         setCountIn={metro.setCountIn}
+        onSongEnd={handleSongEnd}
+        countInMeasures={countInMeasures}
+        setCountInMeasures={setCountInMeasures}
+        countOutMeasures={countOutMeasures}
+        setCountOutMeasures={setCountOutMeasures}
       />
     </div>
   );

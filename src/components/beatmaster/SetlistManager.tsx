@@ -4,7 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Trash2, Edit2, Check, X, Download, Upload, ChevronUp, ChevronDown, Music, Search, Clock, Coffee } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Trash2, Edit2, Check, X, Download, Upload, ChevronUp, ChevronDown, Music, Search, Clock, Coffee, Globe, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import type { Song, Playlist } from '@/types/beatmaster';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +17,17 @@ interface SetlistManagerProps {
   setActivePlaylistId: (id: string | null) => void;
   activeSongId: string | null;
   onSelectSong: (song: Song) => void;
+}
+
+interface MBResult {
+  id: string;
+  name: string;
+  artist: string;
+  duration?: number;
+  timeSignature: string;
+  bpm: number;
+  album: string;
+  year: string;
 }
 
 const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '7/4', '9/8', '12/8', '13/8'];
@@ -47,6 +60,13 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [durationInput, setDurationInput] = useState('');
 
+  // MusicBrainz search
+  const [mbSearchOpen, setMbSearchOpen] = useState(false);
+  const [mbQuery, setMbQuery] = useState('');
+  const [mbResults, setMbResults] = useState<MBResult[]>([]);
+  const [mbLoading, setMbLoading] = useState(false);
+  const [mbError, setMbError] = useState('');
+
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || null;
 
   const filteredSongs = activePlaylist?.songs.filter(s =>
@@ -55,7 +75,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     s.notes.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  // Calculate total duration
   const totalDuration = activePlaylist?.songs.reduce((acc, s) => acc + (s.duration || 0), 0) || 0;
 
   const addPlaylist = () => {
@@ -127,8 +146,41 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     updateSongs(songs);
   };
 
+  // MusicBrainz search
+  const searchMusicBrainz = async () => {
+    if (!mbQuery.trim()) return;
+    setMbLoading(true);
+    setMbError('');
+    setMbResults([]);
+    try {
+      const { data, error } = await supabase.functions.invoke('musicbrainz-search', {
+        body: { query: mbQuery.trim(), limit: 15 },
+      });
+      if (error) throw error;
+      setMbResults(data?.results || []);
+      if (!data?.results?.length) setMbError('Nenhum resultado encontrado.');
+    } catch (err: any) {
+      setMbError(err.message || 'Erro ao buscar.');
+    } finally {
+      setMbLoading(false);
+    }
+  };
+
+  const addFromMB = (result: MBResult) => {
+    if (!activePlaylist) return;
+    const song: Song = {
+      id: crypto.randomUUID(),
+      name: result.name,
+      artist: result.artist,
+      bpm: result.bpm,
+      timeSignature: result.timeSignature,
+      duration: result.duration,
+      notes: result.album ? `Álbum: ${result.album}${result.year ? ` (${result.year})` : ''}` : '',
+    };
+    updateSongs([...activePlaylist.songs, song]);
+  };
+
   const exportXlsx = async () => {
-    // Export ALL playlists as multi-tab Excel
     const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
     for (const pl of playlists) {
@@ -143,7 +195,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
         Pausa: s.isPause ? 'Sim' : '',
       }));
       const ws = XLSX.utils.json_to_sheet(data);
-      // Truncate sheet name to 31 chars (Excel limit)
       const sheetName = pl.name.substring(0, 31);
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     }
@@ -156,7 +207,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     const XLSX = await import('xlsx');
     const data = await file.arrayBuffer();
     const wb = XLSX.read(data);
-
     const newPlaylists: Playlist[] = [];
     for (const sheetName of wb.SheetNames) {
       const ws = wb.Sheets[sheetName];
@@ -175,7 +225,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
         newPlaylists.push({ id: crypto.randomUUID(), name: sheetName, songs });
       }
     }
-
     if (newPlaylists.length > 0) {
       setPlaylists(prev => [...prev, ...newPlaylists]);
       setActivePlaylistId(newPlaylists[0].id);
@@ -187,7 +236,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     <div className="glass rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4">
       <h2 className="text-base sm:text-lg font-semibold text-primary">📋 Setlist Manager</h2>
 
-      {/* Playlist tabs - scrollable */}
+      {/* Playlist tabs */}
       <ScrollArea className="w-full">
         <div className="flex gap-1.5 sm:gap-2 items-center pb-2 min-w-max">
           {playlists.map(pl => (
@@ -223,7 +272,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       {/* Import/Export + Search */}
       <div className="flex flex-wrap gap-2 items-center">
         <Button variant="outline" size="sm" onClick={exportXlsx} disabled={playlists.length === 0} className="text-[10px] sm:text-xs gap-1 h-7">
-          <Download className="w-3 h-3" /> Exportar Tudo
+          <Download className="w-3 h-3" /> Exportar
         </Button>
         <label>
           <Button variant="outline" size="sm" asChild className="text-[10px] sm:text-xs gap-1 cursor-pointer h-7">
@@ -231,6 +280,16 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
           </Button>
           <input type="file" accept=".xlsx,.xls" className="hidden" onChange={importXlsx} />
         </label>
+        {activePlaylist && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { setMbSearchOpen(true); setMbQuery(''); setMbResults([]); setMbError(''); }}
+            className="text-[10px] sm:text-xs gap-1 h-7"
+          >
+            <Globe className="w-3 h-3" /> Buscar Online
+          </Button>
+        )}
         {activePlaylist && (
           <div className="flex-1 min-w-[120px] relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
@@ -355,6 +414,68 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
           Crie ou selecione uma playlist para começar.
         </div>
       )}
+
+      {/* MusicBrainz Search Modal */}
+      <Dialog open={mbSearchOpen} onOpenChange={setMbSearchOpen}>
+        <DialogContent className="glass border-border max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" />
+              Buscar Música Online
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <Input
+              value={mbQuery}
+              onChange={e => setMbQuery(e.target.value)}
+              placeholder="Nome da música ou artista..."
+              className="text-sm"
+              onKeyDown={e => { if (e.key === 'Enter') searchMusicBrainz(); }}
+            />
+            <Button onClick={searchMusicBrainz} disabled={mbLoading || !mbQuery.trim()} className="gap-1 shrink-0">
+              {mbLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              Buscar
+            </Button>
+          </div>
+
+          {mbError && (
+            <p className="text-xs text-destructive">{mbError}</p>
+          )}
+
+          <ScrollArea className="flex-1 max-h-[400px]">
+            <div className="space-y-1.5 pr-2">
+              {mbResults.map((result) => (
+                <div
+                  key={result.id}
+                  className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-sm truncate">{result.name}</div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                      {result.artist && <span className="text-primary/70">{result.artist}</span>}
+                      {result.album && <span> · {result.album}</span>}
+                      {result.year && <span> ({result.year})</span>}
+                      {result.duration && <span> · {formatDuration(result.duration)}</span>}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-7 gap-1 shrink-0"
+                    onClick={() => addFromMB(result)}
+                  >
+                    <Plus className="w-3 h-3" /> Adicionar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <p className="text-[9px] text-muted-foreground text-center">
+            Dados fornecidos por MusicBrainz · BPM padrão: 120 (ajuste manualmente)
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

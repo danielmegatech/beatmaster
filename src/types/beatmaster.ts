@@ -6,7 +6,9 @@ export interface Song {
   timeSignature: string;
   duration?: number; // duration in seconds
   notes: string;
-  isPause?: boolean; // true for pause/interval items
+  isPause?: boolean;
+  coverArt?: string; // URL to album cover art
+  album?: string;
 }
 
 export interface Playlist {

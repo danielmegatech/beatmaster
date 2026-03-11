@@ -106,14 +106,14 @@ const Index = () => {
   });
 
   return (
-    <div className="min-h-screen pb-20 sm:pb-24">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between py-4 sm:py-6 px-3 sm:px-4 max-w-6xl mx-auto">
+      <header className="flex items-center justify-between py-2 sm:py-4 px-3 sm:px-4 max-w-6xl mx-auto w-full shrink-0">
         <div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
             🎵 BeatMaster
           </h1>
-          <p className="text-[10px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Metrônomo · Setlist · Sampler</p>
+          <p className="text-[9px] sm:text-xs text-muted-foreground mt-0.5">Metrônomo · Setlist · Sampler</p>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="relative">
@@ -145,10 +145,10 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Main */}
-      <main className="max-w-6xl mx-auto px-3 sm:px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] xl:grid-cols-[380px_1fr] gap-4 sm:gap-6">
-          <div className="lg:sticky lg:top-4 lg:self-start">
+      {/* Main - fills remaining space */}
+      <main className="flex-1 overflow-y-auto pb-20 sm:pb-24 px-3 sm:px-4">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[340px_1fr] xl:grid-cols-[360px_1fr] gap-4 sm:gap-5">
+          <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto">
             <Metronome
               isPlaying={metro.isPlaying}
               bpm={metro.bpm}
@@ -173,7 +173,7 @@ const Index = () => {
             />
           </div>
 
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-5">
             <SetlistManager
               playlists={playlists}
               setPlaylists={setPlaylists}

@@ -454,6 +454,9 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                   key={result.id}
                   className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors"
                 >
+                  {result.coverArt && (
+                    <img src={result.coverArt} alt="" className="w-10 h-10 rounded object-cover shrink-0 shadow-sm" />
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="font-medium text-sm truncate">{result.name}</div>
                     <div className="text-[10px] sm:text-xs text-muted-foreground truncate">

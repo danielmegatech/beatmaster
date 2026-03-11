@@ -176,6 +176,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       bpm: result.bpm,
       timeSignature: result.timeSignature,
       duration: result.duration,
+      coverArt: result.coverArt,
+      album: result.album,
       notes: result.album ? `Álbum: ${result.album}${result.year ? ` (${result.year})` : ''}` : '',
     };
     updateSongs([...activePlaylist.songs, song]);

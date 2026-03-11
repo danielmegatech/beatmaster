@@ -364,6 +364,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                       <span className="text-[10px] sm:text-xs text-muted-foreground w-4 sm:w-5 text-right shrink-0">{idx + 1}</span>
                       {song.isPause ? (
                         <Coffee className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent shrink-0" />
+                      ) : song.coverArt ? (
+                        <img src={song.coverArt} alt="" className="w-8 h-8 sm:w-10 sm:h-10 rounded object-cover shrink-0 shadow-sm" />
                       ) : (
                         <Music className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
                       )}

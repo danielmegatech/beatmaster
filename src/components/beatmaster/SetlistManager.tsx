@@ -28,6 +28,7 @@ interface MBResult {
   bpm: number;
   album: string;
   year: string;
+  coverArt?: string;
 }
 
 const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '7/4', '9/8', '12/8', '13/8'];

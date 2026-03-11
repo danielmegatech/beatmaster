@@ -20,7 +20,6 @@ serve(async (req) => {
       });
     }
 
-    // Search MusicBrainz recordings
     const mbUrl = `https://musicbrainz.org/ws/2/recording?query=${encodeURIComponent(query)}&limit=${limit}&fmt=json`;
     
     const mbResponse = await fetch(mbUrl, {
@@ -36,27 +35,42 @@ serve(async (req) => {
 
     const mbData = await mbResponse.json();
     
-    const results = (mbData.recordings || []).map((rec: any) => {
+    const results = await Promise.all((mbData.recordings || []).map(async (rec: any) => {
       const artist = rec['artist-credit']?.[0]?.name || '';
       const durationMs = rec.length || 0;
       const durationSec = durationMs ? Math.round(durationMs / 1000) : undefined;
+      const releaseId = rec.releases?.[0]?.id;
       
-      // Try to extract time signature from tags if available
-      let timeSignature = '4/4'; // default
+      // Try to get cover art URL from Cover Art Archive
+      let coverArt: string | undefined;
+      if (releaseId) {
+        try {
+          const caResponse = await fetch(
+            `https://coverartarchive.org/release/${releaseId}`,
+            { headers: { 'Accept': 'application/json' } }
+          );
+          if (caResponse.ok) {
+            const caData = await caResponse.json();
+            const front = caData.images?.find((img: any) => img.front);
+            coverArt = front?.thumbnails?.small || front?.thumbnails?.['250'] || front?.image;
+          }
+        } catch {
+          // Cover art not available, that's fine
+        }
+      }
       
       return {
         id: rec.id,
         name: rec.title || '',
         artist,
         duration: durationSec,
-        timeSignature,
-        // MusicBrainz doesn't provide BPM directly, but AcousticBrainz did (now deprecated)
-        // Default to 120, user can adjust
+        timeSignature: '4/4',
         bpm: 120,
         album: rec.releases?.[0]?.title || '',
         year: rec.releases?.[0]?.date?.substring(0, 4) || '',
+        coverArt,
       };
-    });
+    }));
 
     return new Response(JSON.stringify({ results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

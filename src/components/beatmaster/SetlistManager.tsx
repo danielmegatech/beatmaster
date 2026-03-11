@@ -28,6 +28,7 @@ interface MBResult {
   bpm: number;
   album: string;
   year: string;
+  coverArt?: string;
 }
 
 const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '7/4', '9/8', '12/8', '13/8'];
@@ -175,6 +176,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       bpm: result.bpm,
       timeSignature: result.timeSignature,
       duration: result.duration,
+      coverArt: result.coverArt,
+      album: result.album,
       notes: result.album ? `Álbum: ${result.album}${result.year ? ` (${result.year})` : ''}` : '',
     };
     updateSongs([...activePlaylist.songs, song]);
@@ -361,6 +364,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                       <span className="text-[10px] sm:text-xs text-muted-foreground w-4 sm:w-5 text-right shrink-0">{idx + 1}</span>
                       {song.isPause ? (
                         <Coffee className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent shrink-0" />
+                      ) : song.coverArt ? (
+                        <img src={song.coverArt} alt="" className="w-8 h-8 sm:w-10 sm:h-10 rounded object-cover shrink-0 shadow-sm" />
                       ) : (
                         <Music className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
                       )}
@@ -449,6 +454,9 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                   key={result.id}
                   className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors"
                 >
+                  {result.coverArt && (
+                    <img src={result.coverArt} alt="" className="w-10 h-10 rounded object-cover shrink-0 shadow-sm" />
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="font-medium text-sm truncate">{result.name}</div>
                     <div className="text-[10px] sm:text-xs text-muted-foreground truncate">

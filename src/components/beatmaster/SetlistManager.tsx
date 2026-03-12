@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Trash2, Edit2, Check, X, Download, Upload, ChevronUp, ChevronDown, Music, Search, Clock, Coffee, Globe, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Song, Playlist } from '@/types/beatmaster';
@@ -30,6 +31,9 @@ interface MBResult {
   year: string;
   coverArt?: string;
 }
+
+// Simple in-memory cache for cover art URLs
+const coverArtCache = new Map<string, string | undefined>();
 
 const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '7/4', '9/8', '12/8', '13/8'];
 
@@ -158,8 +162,13 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
         body: { query: mbQuery.trim(), limit: 15 },
       });
       if (error) throw error;
-      setMbResults(data?.results || []);
-      if (!data?.results?.length) setMbError('Nenhum resultado encontrado.');
+      const results: MBResult[] = data?.results || [];
+      // Cache cover art
+      results.forEach(r => {
+        if (r.coverArt) coverArtCache.set(r.id, r.coverArt);
+      });
+      setMbResults(results);
+      if (!results.length) setMbError('Nenhum resultado encontrado.');
     } catch (err: any) {
       setMbError(err.message || 'Erro ao buscar.');
     } finally {
@@ -176,7 +185,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       bpm: result.bpm,
       timeSignature: result.timeSignature,
       duration: result.duration,
-      coverArt: result.coverArt,
+      coverArt: result.coverArt || coverArtCache.get(result.id),
       album: result.album,
       notes: result.album ? `Álbum: ${result.album}${result.year ? ` (${result.year})` : ''}` : '',
     };
@@ -236,7 +245,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   };
 
   return (
-    <div className="glass rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4">
+    <div className="glass rounded-2xl p-4 sm:p-5 space-y-3 sm:space-y-4">
       <h2 className="text-base sm:text-lg font-semibold text-primary">📋 Setlist Manager</h2>
 
       {/* Playlist tabs */}
@@ -319,14 +328,14 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
 
       {/* Song list */}
       {activePlaylist && (
-        <div className="space-y-1.5 sm:space-y-2 max-h-[350px] sm:max-h-[400px] overflow-y-auto pr-1">
+        <div className="space-y-1.5 sm:space-y-2 max-h-[40vh] sm:max-h-[45vh] overflow-y-auto pr-1">
           {filteredSongs.map((song) => {
             const idx = activePlaylist.songs.findIndex(s => s.id === song.id);
             return (
               <div
                 key={song.id}
                 className={cn(
-                  'rounded-lg sm:rounded-xl p-2 sm:p-3 border transition-all cursor-pointer',
+                  'rounded-xl p-2 sm:p-3 border transition-all cursor-pointer relative overflow-hidden group/song',
                   song.isPause
                     ? 'border-accent bg-accent/10 opacity-70'
                     : activeSongId === song.id
@@ -335,8 +344,16 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 )}
                 onClick={() => { if (editingSongId !== song.id && !song.isPause) onSelectSong(song); }}
               >
+                {/* Cover art background for active song */}
+                {!song.isPause && song.coverArt && activeSongId === song.id && (
+                  <div
+                    className="absolute inset-0 bg-cover bg-center opacity-[0.08] pointer-events-none transition-opacity duration-500"
+                    style={{ backgroundImage: `url(${song.coverArt})` }}
+                  />
+                )}
+
                 {editingSongId === song.id ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative z-10">
                     <Input value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="Nome" className="h-7 sm:h-8 text-xs sm:text-sm" />
                     <Input value={editForm.artist || ''} onChange={e => setEditForm({ ...editForm, artist: e.target.value })} placeholder="Artista" className="h-7 sm:h-8 text-xs sm:text-sm" />
                     <div className="grid grid-cols-3 gap-2">
@@ -359,15 +376,22 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2 relative z-10">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                       <span className="text-[10px] sm:text-xs text-muted-foreground w-4 sm:w-5 text-right shrink-0">{idx + 1}</span>
                       {song.isPause ? (
                         <Coffee className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent shrink-0" />
                       ) : song.coverArt ? (
-                        <img src={song.coverArt} alt="" className="w-8 h-8 sm:w-10 sm:h-10 rounded object-cover shrink-0 shadow-sm" />
+                        <img
+                          src={song.coverArt}
+                          alt=""
+                          className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg object-cover shrink-0 shadow-md ring-1 ring-border/20"
+                          loading="lazy"
+                        />
                       ) : (
-                        <Music className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
+                        <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                          <Music className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                        </div>
                       )}
                       <div className="min-w-0">
                         <div className="font-medium text-xs sm:text-sm truncate">{song.name}</div>
@@ -378,13 +402,15 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                                 {song.artist && <span className="text-primary/70">{song.artist} · </span>}
                                 {song.bpm} BPM · {song.timeSignature}
                                 {song.duration ? ` · ${formatDuration(song.duration)}` : ''}
-                                {song.notes ? ` · ${song.notes}` : ''}
                               </>
                           }
                         </div>
+                        {song.notes && !song.isPause && (
+                          <div className="text-[9px] text-muted-foreground/60 truncate mt-0.5">{song.notes}</div>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-0.5 shrink-0">
+                    <div className="flex items-center gap-0.5 shrink-0 opacity-60 group-hover/song:opacity-100 transition-opacity">
                       <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={(e) => { e.stopPropagation(); moveSong(idx, -1); }}>
                         <ChevronUp className="w-3 h-3" />
                       </Button>
@@ -447,15 +473,33 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
             <p className="text-xs text-destructive">{mbError}</p>
           )}
 
+          {mbLoading && (
+            <div className="space-y-2 py-2">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex items-center gap-3 p-2.5">
+                  <Skeleton className="w-10 h-10 rounded" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3.5 w-3/4" />
+                    <Skeleton className="h-2.5 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <ScrollArea className="flex-1 max-h-[400px]">
             <div className="space-y-1.5 pr-2">
               {mbResults.map((result) => (
                 <div
                   key={result.id}
-                  className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors animate-fade-in"
                 >
-                  {result.coverArt && (
-                    <img src={result.coverArt} alt="" className="w-10 h-10 rounded object-cover shrink-0 shadow-sm" />
+                  {result.coverArt ? (
+                    <img src={result.coverArt} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 shadow-sm" loading="lazy" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                      <Music className="w-4 h-4 text-muted-foreground" />
+                    </div>
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="font-medium text-sm truncate">{result.name}</div>

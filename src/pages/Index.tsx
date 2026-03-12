@@ -50,6 +50,13 @@ const Index = () => {
     if (skin !== 'purple') {
       root.classList.add(`skin-${skin}`);
     }
+    // Lock body scroll
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100vh';
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+    };
   }, [isDark, skin]);
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || null;
@@ -80,7 +87,6 @@ const Index = () => {
     if (next < activePlaylist.songs.length) {
       onSelectSong(activePlaylist.songs[next]);
     } else {
-      // End of playlist - stop
       metro.stop();
     }
   }, [activePlaylist, activeSongId, mode, onSelectSong, metro]);
@@ -106,24 +112,24 @@ const Index = () => {
   });
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-[100dvh] flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between py-2 sm:py-4 px-3 sm:px-4 max-w-6xl mx-auto w-full shrink-0">
+      <header className="flex items-center justify-between py-2 sm:py-3 px-3 sm:px-4 max-w-6xl mx-auto w-full shrink-0">
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-primary">
             🎵 BeatMaster
           </h1>
-          <p className="text-[9px] sm:text-xs text-muted-foreground mt-0.5">Metrônomo · Setlist · Sampler</p>
+          <p className="text-[8px] sm:text-[10px] text-muted-foreground mt-0.5">Metrônomo · Setlist · Sampler</p>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="relative">
-            <Button variant="ghost" size="icon" onClick={() => setShowSkinPicker(!showSkinPicker)} className="h-8 w-8 sm:h-9 sm:w-9">
-              <Palette className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Button variant="ghost" size="icon" onClick={() => setShowSkinPicker(!showSkinPicker)} className="h-7 w-7 sm:h-8 sm:w-8">
+              <Palette className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Button>
             {showSkinPicker && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowSkinPicker(false)} />
-                <div className="absolute right-0 top-full mt-2 z-50 glass rounded-xl p-3 min-w-[140px] space-y-2">
+                <div className="absolute right-0 top-full mt-2 z-50 glass rounded-xl p-3 min-w-[140px] space-y-2 animate-scale-in">
                   <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Skin</p>
                   {skins.map(s => (
                     <button
@@ -139,16 +145,16 @@ const Index = () => {
               </>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="h-8 w-8 sm:h-9 sm:w-9">
-            {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
+          <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="h-7 w-7 sm:h-8 sm:w-8">
+            {isDark ? <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           </Button>
         </div>
       </header>
 
       {/* Main - fills remaining space */}
-      <main className="flex-1 overflow-y-auto pb-20 sm:pb-24 px-3 sm:px-4">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[340px_1fr] xl:grid-cols-[360px_1fr] gap-4 sm:gap-5">
-          <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-[88px] sm:pb-[72px] px-3 sm:px-4">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[320px_1fr] xl:grid-cols-[340px_1fr] gap-3 sm:gap-4">
+          <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100dvh-140px)] lg:overflow-y-auto">
             <Metronome
               isPlaying={metro.isPlaying}
               bpm={metro.bpm}
@@ -173,7 +179,7 @@ const Index = () => {
             />
           </div>
 
-          <div className="space-y-4 sm:space-y-5">
+          <div className="space-y-3 sm:space-y-4">
             <SetlistManager
               playlists={playlists}
               setPlaylists={setPlaylists}

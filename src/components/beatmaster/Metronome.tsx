@@ -55,13 +55,13 @@ function NavSelector<T extends string>({ items, value, onChange, label, displayF
   const next = () => onChange(items[(idx + 1) % items.length]);
   const display = displayFn ? displayFn(value) : value;
   return (
-    <div className="space-y-1">
-      <label className="text-[10px] sm:text-xs text-muted-foreground block text-center">{label}</label>
-      <div className="flex items-center gap-0.5">
+    <div className="space-y-1 min-w-0">
+      <label className="text-[10px] sm:text-xs text-muted-foreground block text-center truncate">{label}</label>
+      <div className="flex items-center gap-0.5 min-w-0">
         <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 rounded-lg" onClick={prev}>
           <ChevronLeft className="w-4 h-4" />
         </Button>
-        <div className="flex-1 text-center font-semibold text-sm sm:text-base bg-secondary/50 rounded-lg py-1.5 px-1 min-w-0 truncate border border-border/50">
+        <div className="flex-1 min-w-0 text-center font-semibold text-xs sm:text-sm bg-secondary/50 rounded-lg py-1.5 px-1 truncate border border-border/50">
           {display}
         </div>
         <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 rounded-lg" onClick={next}>

@@ -72,15 +72,36 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
     setAnnouncing(false);
   }, []);
 
+  // Browser TTS fallback (when ElevenLabs unavailable)
+  const speakWithBrowser = useCallback((text: string): Promise<void> => {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+        resolve();
+        return;
+      }
+      try {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'en-US';
+        utter.rate = 1.05;
+        utter.pitch = 1;
+        utter.onend = () => resolve();
+        utter.onerror = () => resolve();
+        window.speechSynthesis.speak(utter);
+      } catch {
+        resolve();
+      }
+    });
+  }, []);
+
   // TTS announcement (always English, "Now playing: ...")
   const announceSong = useCallback(async (song: Song): Promise<void> => {
     stopAnnouncement();
     setAnnouncing(true);
+    const text = song.artist
+      ? `Now playing: ${song.name}, by ${song.artist}.`
+      : `Now playing: ${song.name}.`;
     try {
-      const text = song.artist
-        ? `Now playing: ${song.name}, by ${song.artist}.`
-        : `Now playing: ${song.name}.`;
-
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
       const response = await fetch(url, {
         method: 'POST',
@@ -91,10 +112,24 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
         },
         body: JSON.stringify({ text }),
       });
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        throw new Error(`TTS failed [${response.status}]: ${errText}`);
+
+      const contentType = response.headers.get('Content-Type') || '';
+
+      // JSON response = error/fallback signal from edge function
+      if (contentType.includes('application/json')) {
+        const data = await response.json().catch(() => ({ fallback: true }));
+        console.warn('ElevenLabs TTS unavailable, using browser fallback:', data);
+        if (data?.fallback !== false) {
+          await speakWithBrowser(text);
+        }
+        return;
       }
+
+      if (!response.ok) {
+        await speakWithBrowser(text);
+        return;
+      }
+
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
@@ -106,12 +141,13 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
         audio.play().catch(() => resolve());
       });
     } catch (err) {
-      console.error('TTS announcement failed:', err);
+      console.error('TTS announcement failed, falling back to browser:', err);
+      await speakWithBrowser(text);
     } finally {
       setAnnouncing(false);
       audioRef.current = null;
     }
-  }, [stopAnnouncement]);
+  }, [stopAnnouncement, speakWithBrowser]);
 
   // Reset on song change + auto-announce
   useEffect(() => {

@@ -144,7 +144,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
         <BeatIndicator beatsPerMeasure={beatsPerMeasure} currentBeat={currentBeat} showLabels />
       </div>
 
-      {/* Nav selectors */}
+      {/* Selectors: Compasso on top (full width), Subdivisão + Timbre side-by-side equal */}
       <div className="space-y-3">
         <NavSelector
           items={timeSignatures}
@@ -152,21 +152,25 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
           onChange={setTimeSignature}
           label="Compasso"
         />
-        <div className="grid grid-cols-2 gap-2">
-          <NavSelector
-            items={subdivisions.map(s => s.value)}
-            value={subdivision}
-            onChange={setSubdivision}
-            label="Subdivisão"
-            displayFn={(v) => subdivisions.find(s => s.value === v)?.short || v}
-          />
-          <NavSelector
-            items={sounds}
-            value={sound}
-            onChange={setSound}
-            label="Timbre"
-            displayFn={(v) => `${soundEmojis[v] || ''} ${v.charAt(0).toUpperCase() + v.slice(1)}`}
-          />
+        <div className="grid grid-cols-2 gap-2 min-w-0">
+          <div className="min-w-0">
+            <NavSelector
+              items={subdivisions.map(s => s.value)}
+              value={subdivision}
+              onChange={setSubdivision}
+              label="Subdivisão"
+              displayFn={(v) => subdivisions.find(s => s.value === v)?.short || v}
+            />
+          </div>
+          <div className="min-w-0">
+            <NavSelector
+              items={sounds}
+              value={sound}
+              onChange={setSound}
+              label="Timbre"
+              displayFn={(v) => `${soundEmojis[v] || ''} ${v.charAt(0).toUpperCase() + v.slice(1)}`}
+            />
+          </div>
         </div>
       </div>
 

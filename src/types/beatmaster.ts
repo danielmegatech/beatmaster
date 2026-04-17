@@ -15,6 +15,7 @@ export interface Playlist {
   id: string;
   name: string;
   songs: Song[];
+  band?: string; // Band/group this playlist belongs to
 }
 
 export type Subdivision = 'quarter' | 'eighth' | 'triplet' | 'sixteenth';

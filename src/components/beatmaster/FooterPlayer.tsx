@@ -62,12 +62,15 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
   const countInDuration = countInBeats > 0 ? (countInBeats * 60) / bpm : 0;
   const totalDuration = activeSong?.duration ? countInDuration + activeSong.duration : 0;
 
-  // Stop any in-flight TTS
+  // Stop any in-flight TTS (ElevenLabs audio + browser speech)
   const stopAnnouncement = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
       audioRef.current = null;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch { /* noop */ }
     }
     setAnnouncing(false);
   }, []);

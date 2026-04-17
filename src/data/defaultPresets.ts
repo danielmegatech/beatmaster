@@ -4,8 +4,8 @@ function song(name: string, bpm: number, ts: string, notes = '', artist = '', du
   return { id: crypto.randomUUID(), name, bpm, timeSignature: ts, notes, artist, duration };
 }
 
-function playlist(name: string, songs: Song[]): Playlist {
-  return { id: crypto.randomUUID(), name, songs };
+function playlist(name: string, songs: Song[], band = 'Geral'): Playlist {
+  return { id: crypto.randomUUID(), name, songs, band };
 }
 
 export const defaultPlaylists: Playlist[] = [

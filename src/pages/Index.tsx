@@ -7,7 +7,8 @@ import SetlistManager from '@/components/beatmaster/SetlistManager';
 import SamplerPad from '@/components/beatmaster/SamplerPad';
 import FooterPlayer from '@/components/beatmaster/FooterPlayer';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, Palette } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sun, Moon, Palette, Users, ListMusic } from 'lucide-react';
 import { defaultPlaylists } from '@/data/defaultPresets';
 import type { Playlist, Song, AppMode } from '@/types/beatmaster';
 

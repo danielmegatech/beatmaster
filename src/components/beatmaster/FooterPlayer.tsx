@@ -152,7 +152,8 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
     }
   }, [stopAnnouncement, speakWithBrowser]);
 
-  // Reset on song change + auto-announce
+  // Reset on song change. Auto-announce ONLY happens when user presses play
+  // (or when navigating between songs while already playing).
   useEffect(() => {
     setElapsed(0);
     startTimeRef.current = null;
@@ -160,16 +161,34 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
     setPhase('idle');
     stopAnnouncement();
 
-    // Auto-announce only in setlist mode + when enabled + new song
+    // If already playing and song changed (prev/next during playback), announce now
     if (
-      activeSong && ttsEnabled && mode === 'setlist' &&
+      isPlaying && activeSong && ttsEnabled && mode === 'setlist' &&
       announcedSongRef.current !== activeSong.id && !activeSong.isPause
     ) {
       announcedSongRef.current = activeSong.id;
       announceSong(activeSong);
     }
     return () => stopAnnouncement();
-  }, [activeSong?.id, mode, ttsEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeSong?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Play handler: TTS announce → then start metronome (count-in → BPM)
+  const handlePlayClick = useCallback(async () => {
+    // If currently playing → just stop
+    if (isPlaying) {
+      toggle();
+      return;
+    }
+    // Announce first when in setlist mode with TTS, then start
+    if (
+      activeSong && ttsEnabled && mode === 'setlist' && !activeSong.isPause &&
+      announcedSongRef.current !== activeSong.id
+    ) {
+      announcedSongRef.current = activeSong.id;
+      await announceSong(activeSong);
+    }
+    toggle();
+  }, [isPlaying, toggle, activeSong, ttsEnabled, mode, announceSong]);
 
   // Timer logic
   useEffect(() => {
@@ -279,7 +298,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onPrev} disabled={mode === 'free'}>
               <SkipBack className="w-3.5 h-3.5" />
             </Button>
-            <Button onClick={toggle} size="icon" className="rounded-full h-9 w-9 glow-purple">
+            <Button onClick={handlePlayClick} size="icon" className="rounded-full h-9 w-9 glow-purple">
               {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onNext} disabled={mode === 'free'}>
@@ -361,7 +380,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8" onClick={onPrev} disabled={mode === 'free'}>
               <SkipBack className="w-3.5 h-3.5" />
             </Button>
-            <Button onClick={toggle} size="icon" className="rounded-full h-10 w-10 md:h-11 md:w-11 glow-purple">
+            <Button onClick={handlePlayClick} size="icon" className="rounded-full h-10 w-10 md:h-11 md:w-11 glow-purple">
               {isPlaying ? <Pause className="w-4 h-4 md:w-5 md:h-5" /> : <Play className="w-4 h-4 md:w-5 md:h-5" />}
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8" onClick={onNext} disabled={mode === 'free'}>

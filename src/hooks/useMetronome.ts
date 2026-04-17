@@ -159,6 +159,7 @@ export function useMetronome() {
   const currentBeatRef = useRef(0);
   const countInBeatRef = useRef(0);
   const isCountInPhaseRef = useRef(false);
+  const COUNT_IN_MEASURES = 2;
   const scheduleAheadTime = 0.1;
   const lookahead = 25; // ms
 
@@ -203,12 +204,14 @@ export function useMetronome() {
     while (nextBeatTimeRef.current < ctx.currentTime + scheduleAheadTime) {
       const beats = getBeatsPerMeasure(tsRef.current);
 
-      // Count-in phase: play accent clicks only, one per beat
+      // Count-in phase: 2 full measures of accented clicks (cowbell)
       if (isCountInPhaseRef.current) {
-        const isAccent = countInBeatRef.current === 0;
+        const totalCountInBeats = beats * COUNT_IN_MEASURES;
+        const beatInMeasure = countInBeatRef.current % beats;
+        const isAccent = beatInMeasure === 0;
         playClick(ctx, nextBeatTimeRef.current, isAccent, 'cowbell', volumeRef.current, panRef.current, mg);
 
-        const beatIdx = countInBeatRef.current;
+        const beatIdx = beatInMeasure;
         const delay = Math.max(0, (nextBeatTimeRef.current - ctx.currentTime) * 1000);
         setTimeout(() => setCurrentBeat(beatIdx), delay);
 
@@ -216,7 +219,7 @@ export function useMetronome() {
         nextBeatTimeRef.current += secondsPerBeat;
         countInBeatRef.current++;
 
-        if (countInBeatRef.current >= beats) {
+        if (countInBeatRef.current >= totalCountInBeats) {
           isCountInPhaseRef.current = false;
           currentBeatRef.current = 0;
           const d2 = Math.max(0, (nextBeatTimeRef.current - ctx.currentTime) * 1000);

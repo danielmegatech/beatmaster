@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Mic } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Mic, MicOff } from 'lucide-react';
 import BeatIndicator from './BeatIndicator';
 import type { Song, AppMode } from '@/types/beatmaster';
 import { cn } from '@/lib/utils';
@@ -24,10 +24,8 @@ interface FooterPlayerProps {
   countIn: boolean;
   setCountIn: (v: boolean) => void;
   onSongEnd?: () => void;
-  countInMeasures: number;
-  setCountInMeasures: (v: number) => void;
-  countOutMeasures: number;
-  setCountOutMeasures: (v: number) => void;
+  ttsEnabled: boolean;
+  setTtsEnabled: (v: boolean) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -36,15 +34,17 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-type Phase = 'count-in' | 'playing' | 'count-out' | 'idle';
+type Phase = 'announcing' | 'count-in' | 'playing' | 'idle';
+
+// Count-in is fixed: 2 measures at song's BPM
+const COUNT_IN_MEASURES = 2;
 
 const FooterPlayer: React.FC<FooterPlayerProps> = ({
   isPlaying, toggle, bpm, currentBeat, beatsPerMeasure,
   masterVolume, setMasterVolume, pan, setPan,
   mode, setMode, activeSong, onPrev, onNext,
   countIn, setCountIn, onSongEnd,
-  countInMeasures, setCountInMeasures,
-  countOutMeasures, setCountOutMeasures,
+  ttsEnabled, setTtsEnabled,
 }) => {
   const [elapsed, setElapsed] = useState(0);
   const [phase, setPhase] = useState<Phase>('idle');
@@ -54,23 +54,83 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
   const intervalRef = useRef<number | null>(null);
   const songEndedRef = useRef(false);
   const progressBarRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const announcedSongRef = useRef<string | null>(null);
 
-  // Count-in repeats twice (2x the measures)
-  const countInBeats = countIn && countInMeasures > 0 ? countInMeasures * 2 * beatsPerMeasure : 0;
+  // Count-in: 2 measures at the song BPM
+  const countInBeats = countIn ? COUNT_IN_MEASURES * beatsPerMeasure : 0;
   const countInDuration = countInBeats > 0 ? (countInBeats * 60) / bpm : 0;
-  const countOutBeats = countOutMeasures > 0 ? countOutMeasures * 2 * beatsPerMeasure : 0;
-  const countOutDuration = countOutBeats > 0 ? (countOutBeats * 60) / bpm : 0;
-  const totalDuration = activeSong?.duration
-    ? countInDuration + activeSong.duration + countOutDuration
-    : 0;
+  const totalDuration = activeSong?.duration ? countInDuration + activeSong.duration : 0;
 
-  // Reset on song change
+  // Stop any in-flight TTS
+  const stopAnnouncement = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+      audioRef.current = null;
+    }
+    setAnnouncing(false);
+  }, []);
+
+  // TTS announcement (always English, "Now playing: ...")
+  const announceSong = useCallback(async (song: Song): Promise<void> => {
+    stopAnnouncement();
+    setAnnouncing(true);
+    try {
+      const text = song.artist
+        ? `Now playing: ${song.name}, by ${song.artist}.`
+        : `Now playing: ${song.name}.`;
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ text }),
+      });
+      if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        throw new Error(`TTS failed [${response.status}]: ${errText}`);
+      }
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      await new Promise<void>((resolve) => {
+        audio.onended = () => { URL.revokeObjectURL(audioUrl); resolve(); };
+        audio.onerror = () => { URL.revokeObjectURL(audioUrl); resolve(); };
+        audio.play().catch(() => resolve());
+      });
+    } catch (err) {
+      console.error('TTS announcement failed:', err);
+    } finally {
+      setAnnouncing(false);
+      audioRef.current = null;
+    }
+  }, [stopAnnouncement]);
+
+  // Reset on song change + auto-announce
   useEffect(() => {
     setElapsed(0);
     startTimeRef.current = null;
     songEndedRef.current = false;
     setPhase('idle');
-  }, [activeSong?.id]);
+    stopAnnouncement();
+
+    // Auto-announce only in setlist mode + when enabled + new song
+    if (
+      activeSong && ttsEnabled && mode === 'setlist' &&
+      announcedSongRef.current !== activeSong.id && !activeSong.isPause
+    ) {
+      announcedSongRef.current = activeSong.id;
+      announceSong(activeSong);
+    }
+    return () => stopAnnouncement();
+  }, [activeSong?.id, mode, ttsEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Timer logic
   useEffect(() => {
@@ -83,19 +143,12 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
         const capped = Math.min(e, totalDuration);
         setElapsed(capped);
 
-        if (capped < countInDuration) {
-          setPhase('count-in');
-        } else if (capped < countInDuration + activeSong.duration!) {
-          setPhase('playing');
-        } else if (capped < totalDuration) {
-          setPhase('count-out');
-        }
+        if (capped < countInDuration) setPhase('count-in');
+        else if (capped < totalDuration) setPhase('playing');
 
         if (capped >= totalDuration && !songEndedRef.current) {
           songEndedRef.current = true;
-          if (onSongEnd && mode === 'setlist') {
-            onSongEnd();
-          }
+          if (onSongEnd && mode === 'setlist') onSongEnd();
         }
       }, 50);
     } else {
@@ -103,9 +156,9 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
       if (!isPlaying) setPhase('idle');
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [isPlaying, activeSong?.id, activeSong?.duration, countInDuration, countOutDuration, mode, onSongEnd, isSeeking]);
+  }, [isPlaying, activeSong?.id, activeSong?.duration, countInDuration, totalDuration, mode, onSongEnd, isSeeking]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Seeking via progress bar
+  // Seeking
   const handleSeek = useCallback((clientX: number) => {
     if (!progressBarRef.current || !totalDuration) return;
     const rect = progressBarRef.current.getBoundingClientRect();
@@ -127,144 +180,60 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
     if (isSeeking) handleSeek(e.clientX);
   }, [isSeeking, handleSeek]);
 
-  const onPointerUp = useCallback(() => {
-    setIsSeeking(false);
-  }, []);
-
-  // TTS announcement
-  const announceSong = useCallback(async () => {
-    if (!activeSong || announcing) return;
-    setAnnouncing(true);
-    try {
-      const text = activeSong.artist
-        ? `Next up: ${activeSong.name} by ${activeSong.artist}`
-        : `Next up: ${activeSong.name}`;
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ text }),
-        }
-      );
-      if (!response.ok) throw new Error('TTS failed');
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      await audio.play();
-    } catch (err) {
-      console.error('TTS announcement failed:', err);
-    } finally {
-      setAnnouncing(false);
-    }
-  }, [activeSong, announcing]);
+  const onPointerUp = useCallback(() => setIsSeeking(false), []);
 
   const overallProgress = totalDuration > 0 ? (elapsed / totalDuration) * 100 : 0;
   const songElapsed = Math.max(0, elapsed - countInDuration);
-  const remaining = activeSong?.duration
-    ? Math.max(0, activeSong.duration - songElapsed)
-    : 0;
-
-  // Count-in/out beat counters
   const countInRemaining = phase === 'count-in'
     ? Math.ceil((countInDuration - elapsed) / (60 / bpm))
     : 0;
-  const countOutRemaining = phase === 'count-out'
-    ? Math.ceil((totalDuration - elapsed) / (60 / bpm))
-    : 0;
-
-  // Phase-based pulse class
   const phaseBarPulse = isPlaying && phase !== 'idle' ? 'animate-[pulse_1s_ease-in-out_infinite]' : '';
-
-  // Cover art background
   const coverBg = activeSong?.coverArt;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 overflow-hidden">
-      {/* Cover art background */}
       {coverBg && (
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-[0.12] blur-sm pointer-events-none transition-all duration-700"
-          style={{ backgroundImage: `url(${coverBg})` }}
-        />
+        <div className="absolute inset-0 bg-cover bg-center opacity-[0.12] blur-sm pointer-events-none transition-all duration-700"
+          style={{ backgroundImage: `url(${coverBg})` }} />
       )}
       <div className="absolute inset-0 glass pointer-events-none" />
 
       {/* Seekable progress bar */}
       {activeSong?.duration && (
-        <div
-          ref={progressBarRef}
-          className="relative h-3 cursor-pointer group z-10"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-        >
-          {/* Background segments */}
+        <div ref={progressBarRef}
+          className="relative h-3 cursor-pointer group z-10 touch-none"
+          onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
           <div className="absolute inset-0 flex">
             {countInDuration > 0 && (
               <div className="h-full bg-accent/15" style={{ width: `${(countInDuration / totalDuration) * 100}%` }} />
             )}
             <div className="h-full bg-primary/10 flex-1" />
-            {countOutDuration > 0 && (
-              <div className="h-full bg-destructive/15" style={{ width: `${(countOutDuration / totalDuration) * 100}%` }} />
-            )}
           </div>
-
-          {/* Filled progress */}
           <div className="absolute inset-0 flex">
             {countInDuration > 0 && (
               <div className="h-full overflow-hidden" style={{ width: `${(countInDuration / totalDuration) * 100}%` }}>
-                <div
-                  className={cn("h-full bg-accent", phase === 'count-in' && phaseBarPulse)}
-                  style={{ width: `${Math.min(100, (elapsed / countInDuration) * 100)}%`, transition: isSeeking ? 'none' : 'width 80ms linear' }}
-                />
+                <div className={cn("h-full bg-accent", phase === 'count-in' && phaseBarPulse)}
+                  style={{ width: `${Math.min(100, (elapsed / countInDuration) * 100)}%`, transition: isSeeking ? 'none' : 'width 80ms linear' }} />
               </div>
             )}
             <div className="h-full overflow-hidden flex-1">
-              <div
-                className={cn("h-full bg-primary", phase === 'playing' && phaseBarPulse)}
-                style={{ width: `${activeSong.duration ? Math.min(100, (songElapsed / activeSong.duration) * 100) : 0}%`, transition: isSeeking ? 'none' : 'width 80ms linear' }}
-              />
+              <div className={cn("h-full bg-primary", phase === 'playing' && phaseBarPulse)}
+                style={{ width: `${activeSong.duration ? Math.min(100, (songElapsed / activeSong.duration) * 100) : 0}%`, transition: isSeeking ? 'none' : 'width 80ms linear' }} />
             </div>
-            {countOutDuration > 0 && (
-              <div className="h-full overflow-hidden" style={{ width: `${(countOutDuration / totalDuration) * 100}%` }}>
-                <div
-                  className={cn("h-full bg-destructive/70", phase === 'count-out' && phaseBarPulse)}
-                  style={{ width: `${Math.min(100, Math.max(0, (elapsed - countInDuration - (activeSong.duration || 0)) / countOutDuration) * 100)}%`, transition: isSeeking ? 'none' : 'width 80ms linear' }}
-                />
-              </div>
-            )}
           </div>
-
-          {/* Seek thumb */}
-          <div
-            className={cn(
-              "absolute top-1/2 -translate-y-1/2 rounded-full bg-primary border-2 border-primary-foreground shadow-lg pointer-events-none transition-all",
-              isSeeking ? "w-5 h-5 opacity-100 scale-110" : "w-4 h-4 opacity-0 group-hover:opacity-100"
-            )}
-            style={{ left: `calc(${overallProgress}% - ${isSeeking ? 10 : 8}px)` }}
-          />
-
-          {/* Phase labels with fade animation */}
+          <div className={cn(
+            "absolute top-1/2 -translate-y-1/2 rounded-full bg-primary border-2 border-primary-foreground shadow-lg pointer-events-none transition-all",
+            isSeeking ? "w-5 h-5 opacity-100 scale-110" : "w-4 h-4 opacity-0 group-hover:opacity-100"
+          )} style={{ left: `calc(${overallProgress}% - ${isSeeking ? 10 : 8}px)` }} />
           {phase === 'count-in' && (
             <span className="absolute top-full left-2 text-[9px] text-accent font-bold z-10 whitespace-nowrap mt-0.5 animate-fade-in">
-              ⏳ COUNT IN × 2 · {countInRemaining} beats
-            </span>
-          )}
-          {phase === 'count-out' && (
-            <span className="absolute top-full right-2 text-[9px] text-destructive font-bold z-10 whitespace-nowrap mt-0.5 animate-fade-in">
-              ⏳ COUNT OUT × 2 · {countOutRemaining} beats
+              ⏳ COUNT IN · {countInRemaining} beats
             </span>
           )}
         </div>
       )}
 
-      {/* Mobile layout */}
+      {/* Mobile */}
       <div className="sm:hidden px-3 py-2 space-y-1.5 relative z-10">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1">
@@ -278,39 +247,31 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
               <SkipForward className="w-3.5 h-3.5" />
             </Button>
           </div>
-
           <BeatIndicator beatsPerMeasure={beatsPerMeasure} currentBeat={currentBeat} compact />
-
           <div className="flex items-center gap-1.5">
             <span className="text-sm tabular-nums font-semibold">{bpm}</span>
-            <Button
-              variant="outline"
-              size="sm"
+            <Button variant="outline" size="sm"
               onClick={() => setMode(mode === 'free' ? 'setlist' : 'free')}
-              className={cn('text-[10px] h-6 px-2', mode === 'setlist' && 'border-primary text-primary')}
-            >
+              className={cn('text-[10px] h-6 px-2', mode === 'setlist' && 'border-primary text-primary')}>
               {mode === 'free' ? 'Livre' : 'Set'}
             </Button>
           </div>
         </div>
-
         <div className="flex items-center gap-2">
           {activeSong?.coverArt && (
             <img src={activeSong.coverArt} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0 shadow-md" />
           )}
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-medium truncate">
+              {announcing && <span className="text-primary font-bold mr-1 animate-pulse">🎤</span>}
               {phase === 'count-in' && <span className="text-accent font-bold mr-1 animate-pulse">⏳ IN</span>}
-              {phase === 'count-out' && <span className="text-destructive font-bold mr-1 animate-pulse">⏳ OUT</span>}
               {activeSong ? activeSong.name : 'Modo Livre'}
             </div>
-            {activeSong?.artist && (
-              <div className="text-[9px] text-muted-foreground truncate">{activeSong.artist}</div>
-            )}
+            {activeSong?.artist && <div className="text-[9px] text-muted-foreground truncate">{activeSong.artist}</div>}
           </div>
           {activeSong?.duration && isPlaying && (
             <span className="text-[10px] tabular-nums text-primary font-mono shrink-0">
-              {formatTime(Math.min(songElapsed, activeSong.duration))} / {formatTime(activeSong.duration)}
+              {formatTime(Math.min(songElapsed, activeSong.duration))}/{formatTime(activeSong.duration)}
             </span>
           )}
           <div className="flex items-center gap-1 shrink-0">
@@ -320,30 +281,23 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
         </div>
       </div>
 
-      {/* Desktop layout */}
+      {/* Desktop */}
       <div className="hidden sm:block px-4 py-2.5 relative z-10">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 md:gap-4">
-          {/* Song info with cover art */}
           <div className="flex items-center gap-3 min-w-0 w-40 md:w-56">
             {activeSong?.coverArt && (
-              <img
-                src={activeSong.coverArt}
-                alt=""
-                className="w-11 h-11 md:w-12 md:h-12 rounded-lg object-cover shrink-0 shadow-lg ring-1 ring-border/30"
-              />
+              <img src={activeSong.coverArt} alt="" className="w-11 h-11 md:w-12 md:h-12 rounded-lg object-cover shrink-0 shadow-lg ring-1 ring-border/30" />
             )}
             <div className="min-w-0">
               {activeSong ? (
                 <>
                   <div className="text-xs md:text-sm font-medium truncate flex items-center gap-1.5">
+                    {announcing && (
+                      <span className="text-[9px] text-primary font-bold animate-pulse bg-primary/15 px-1.5 py-0.5 rounded-full">🎤</span>
+                    )}
                     {phase === 'count-in' && (
                       <span className="text-[9px] text-accent font-bold animate-pulse bg-accent/15 px-1.5 py-0.5 rounded-full">
                         IN {countInRemaining}
-                      </span>
-                    )}
-                    {phase === 'count-out' && (
-                      <span className="text-[9px] text-destructive font-bold animate-pulse bg-destructive/15 px-1.5 py-0.5 rounded-full">
-                        OUT {countOutRemaining}
                       </span>
                     )}
                     <span className="truncate">{activeSong.name}</span>
@@ -364,7 +318,6 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             </div>
           </div>
 
-          {/* Controls */}
           <div className="flex items-center gap-1.5">
             <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8" onClick={onPrev} disabled={mode === 'free'}>
               <SkipBack className="w-3.5 h-3.5" />
@@ -377,81 +330,58 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             </Button>
           </div>
 
-          {/* Beat indicator + BPM */}
           <div className="flex items-center gap-2 md:gap-3">
             <BeatIndicator beatsPerMeasure={beatsPerMeasure} currentBeat={currentBeat} compact showLabels />
             <span className="text-sm tabular-nums font-semibold text-foreground">{bpm}</span>
           </div>
 
-          {/* Master volume */}
           <div className="flex items-center gap-2 w-24 md:w-28">
             <Volume2 className="w-4 h-4 text-muted-foreground shrink-0" />
             <Slider value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} />
           </div>
 
-          {/* Count-in/out + TTS */}
+          {/* Count-in + TTS toggle */}
           <div className="hidden md:flex items-center gap-1">
             <Button
               variant={countIn ? 'default' : 'outline'}
               size="sm"
               onClick={() => setCountIn(!countIn)}
-              className="text-[10px] h-7 gap-0.5 px-1.5"
-              title="Count-in (×2)"
+              className="text-[10px] h-7 gap-1 px-2"
+              title="Count-in: 2 compassos antes de iniciar"
             >
-              <Timer className="w-3 h-3" />
-              In:{countInMeasures}×2
+              <Timer className="w-3 h-3" /> Count In
             </Button>
             <Button
-              variant={countOutMeasures > 0 ? 'default' : 'outline'}
+              variant={ttsEnabled ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setCountOutMeasures(countOutMeasures > 0 ? 0 : 2)}
-              className="text-[10px] h-7 gap-0.5 px-1.5"
-              title="Count-out (×2)"
-            >
-              <Timer className="w-3 h-3" />
-              Out:{countOutMeasures}×2
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={announceSong}
-              disabled={!activeSong || announcing}
+              onClick={() => setTtsEnabled(!ttsEnabled)}
               className={cn(
-                "text-[10px] h-7 gap-0.5 px-1.5 transition-all",
-                announcing && "border-primary bg-primary/10"
+                "text-[10px] h-7 gap-1 px-2 transition-all",
+                announcing && "border-primary bg-primary/20 animate-pulse"
               )}
-              title="Anunciar música (TTS)"
+              title={ttsEnabled ? "Anúncio por voz ativado (toca antes de cada música)" : "Anúncio por voz desativado"}
             >
-              <Mic className={cn("w-3 h-3", announcing && "animate-pulse text-primary")} />
-              {announcing ? '...' : '🎤'}
+              {ttsEnabled ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
+              TTS
             </Button>
           </div>
 
-          {/* Pan L/C/R */}
+          {/* Pan */}
           <div className="hidden lg:flex items-center gap-1">
             {[{ label: 'L', val: -1 }, { label: 'C', val: 0 }, { label: 'R', val: 1 }].map(({ label, val }) => (
-              <Button
-                key={label}
+              <Button key={label}
                 variant={Math.abs(pan - val) < 0.1 ? 'default' : 'outline'}
-                size="sm"
-                className="h-7 w-7 text-xs p-0"
-                onClick={() => setPan(val)}
-              >
+                size="sm" className="h-7 w-7 text-xs p-0"
+                onClick={() => setPan(val)}>
                 {label}
               </Button>
             ))}
           </div>
 
-          {/* Mode toggle */}
-          <Button
-            variant="outline"
-            size="sm"
+          <Button variant="outline" size="sm"
             onClick={() => setMode(mode === 'free' ? 'setlist' : 'free')}
-            className={cn(
-              'text-xs whitespace-nowrap h-7 md:h-8',
-              mode === 'setlist' && 'border-primary text-primary'
-            )}
-          >
+            className={cn('text-xs whitespace-nowrap h-7 md:h-8',
+              mode === 'setlist' && 'border-primary text-primary')}>
             {mode === 'free' ? 'Livre' : 'Setlist'}
           </Button>
         </div>

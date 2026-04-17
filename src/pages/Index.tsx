@@ -119,11 +119,45 @@ const Index = () => {
 
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden">
-      <header className="flex items-center justify-between py-2 sm:py-3 px-3 sm:px-4 max-w-6xl mx-auto w-full shrink-0">
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-primary truncate">🎵 BeatMaster</h1>
-          <p className="text-[8px] sm:text-[10px] text-muted-foreground mt-0.5 truncate">Metrônomo · Setlist · Sampler</p>
+      <header className="flex items-center justify-between gap-2 py-2 sm:py-3 px-3 sm:px-4 max-w-6xl mx-auto w-full shrink-0">
+        <div className="min-w-0 shrink-0">
+          <h1 className="text-base sm:text-xl md:text-2xl font-bold text-primary truncate">🎵 BeatMaster</h1>
+          <p className="hidden sm:block text-[10px] text-muted-foreground mt-0.5 truncate">Metrônomo · Setlist · Sampler</p>
         </div>
+
+        {/* Band + Setlist quick selectors */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0 justify-center max-w-md">
+          <div className="flex items-center gap-1 min-w-0 flex-1">
+            <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <Select value={selectedBand} onValueChange={setSelectedBand}>
+              <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs min-w-0">
+                <SelectValue placeholder="Banda" />
+              </SelectTrigger>
+              <SelectContent className="z-50 bg-popover">
+                <SelectItem value={ALL_BANDS}>🎵 Todas</SelectItem>
+                {Array.from(new Set(playlists.map(p => p.band || 'Geral'))).sort().map(b => (
+                  <SelectItem key={b} value={b}>{b}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1 min-w-0 flex-1">
+            <ListMusic className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <Select value={activePlaylistId || ''} onValueChange={(v) => setActivePlaylistId(v)}>
+              <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs min-w-0">
+                <SelectValue placeholder="Setlist" />
+              </SelectTrigger>
+              <SelectContent className="z-50 bg-popover">
+                {playlists
+                  .filter(p => selectedBand === ALL_BANDS || (p.band || 'Geral') === selectedBand)
+                  .map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <div className="relative">
             <Button variant="ghost" size="icon" onClick={() => setShowSkinPicker(!showSkinPicker)} className="h-7 w-7 sm:h-8 sm:w-8">

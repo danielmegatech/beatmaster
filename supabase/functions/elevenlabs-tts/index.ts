@@ -5,6 +5,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,17 +21,15 @@ serve(async (req) => {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
     if (!ELEVENLABS_API_KEY) {
-      throw new Error("ELEVENLABS_API_KEY is not configured");
+      // Signal client to use browser TTS fallback
+      return jsonResponse({ error: 'NO_API_KEY', fallback: true });
     }
 
     if (!text) {
-      return new Response(JSON.stringify({ error: 'Text is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse({ error: 'Text is required' }, 400);
     }
 
-    const voice = voiceId || 'JBFqnCBsd6RMkjVDRZzb'; // George voice
+    const voice = voiceId || 'JBFqnCBsd6RMkjVDRZzb';
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=mp3_44100_128`,
@@ -51,7 +55,16 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`ElevenLabs API error [${response.status}]: ${errorText}`);
+      console.error(`ElevenLabs API error [${response.status}]:`, errorText);
+
+      // Auth/billing/quota → tell client to fall back to browser TTS
+      // Return 200 so the client can read the JSON body cleanly
+      const fallback = response.status === 401 || response.status === 402 || response.status === 429;
+      return jsonResponse({
+        error: `ElevenLabs API error [${response.status}]`,
+        details: errorText,
+        fallback,
+      });
     }
 
     const audioBuffer = await response.arrayBuffer();
@@ -63,9 +76,10 @@ serve(async (req) => {
       },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    console.error('TTS function error:', error);
+    return jsonResponse({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      fallback: true,
     });
   }
 });

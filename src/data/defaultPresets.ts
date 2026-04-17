@@ -332,7 +332,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Somebody Told Me', 138, '4/4', '', 'The Killers'),
     song('R U Mine?', 97, '4/4', '', 'Arctic Monkeys'),
     song('Obstacle 1', 148, '4/4', '', 'Interpol'),
-  ]),
+  ], 'Covers Variados'),
 ];
 
 export const defaultPadConfigs: PadConfig[] = [

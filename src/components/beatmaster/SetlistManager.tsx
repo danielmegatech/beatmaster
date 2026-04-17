@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
+  useSensor, useSensors, DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy
+} from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Trash2, Edit2, Check, X, Download, Upload, ChevronUp, ChevronDown, Music, Search, Clock, Coffee, Globe, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Check, Download, Upload, Music, Search, Clock, Coffee, Globe, Loader2, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Song, Playlist } from '@/types/beatmaster';
-import { cn } from '@/lib/utils';
+import SongCard from './SongCard';
 
 interface SetlistManagerProps {
   playlists: Playlist[];
@@ -18,6 +24,8 @@ interface SetlistManagerProps {
   setActivePlaylistId: (id: string | null) => void;
   activeSongId: string | null;
   onSelectSong: (song: Song) => void;
+  selectedBand: string;
+  setSelectedBand: (b: string) => void;
 }
 
 interface MBResult {
@@ -32,10 +40,8 @@ interface MBResult {
   coverArt?: string;
 }
 
-// Simple in-memory cache for cover art URLs
 const coverArtCache = new Map<string, string | undefined>();
-
-const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '7/4', '9/8', '12/8', '13/8'];
+const ALL_BANDS = '__all__';
 
 function formatDuration(seconds?: number): string {
   if (!seconds) return '';
@@ -47,30 +53,44 @@ function formatDuration(seconds?: number): string {
 function parseDuration(str: string): number | undefined {
   if (!str) return undefined;
   const parts = str.split(':');
-  if (parts.length === 2) {
-    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-  }
+  if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1]);
   const n = parseInt(str);
   return isNaN(n) ? undefined : n;
 }
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   playlists, setPlaylists, activePlaylistId, setActivePlaylistId, activeSongId, onSelectSong,
+  selectedBand, setSelectedBand,
 }) => {
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Song>>({});
   const [newPlaylistName, setNewPlaylistName] = useState('');
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameVal, setRenameVal] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [durationInput, setDurationInput] = useState('');
 
-  // MusicBrainz search
   const [mbSearchOpen, setMbSearchOpen] = useState(false);
   const [mbQuery, setMbQuery] = useState('');
   const [mbResults, setMbResults] = useState<MBResult[]>([]);
   const [mbLoading, setMbLoading] = useState(false);
   const [mbError, setMbError] = useState('');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  // Bands list (unique, sorted)
+  const bands = useMemo(() => {
+    const set = new Set(playlists.map(p => p.band || 'Geral'));
+    return Array.from(set).sort();
+  }, [playlists]);
+
+  // Filtered playlists by selected band
+  const visiblePlaylists = useMemo(() => {
+    if (selectedBand === ALL_BANDS) return playlists;
+    return playlists.filter(p => (p.band || 'Geral') === selectedBand);
+  }, [playlists, selectedBand]);
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || null;
 
@@ -84,7 +104,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
 
   const addPlaylist = () => {
     const name = newPlaylistName.trim() || `Setlist ${playlists.length + 1}`;
-    const pl: Playlist = { id: crypto.randomUUID(), name, songs: [] };
+    const band = selectedBand === ALL_BANDS ? 'Geral' : selectedBand;
+    const pl: Playlist = { id: crypto.randomUUID(), name, songs: [], band };
     setPlaylists(prev => [...prev, pl]);
     setActivePlaylistId(pl.id);
     setNewPlaylistName('');
@@ -92,12 +113,10 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
 
   const deletePlaylist = (id: string) => {
     setPlaylists(prev => prev.filter(p => p.id !== id));
-    if (activePlaylistId === id) setActivePlaylistId(playlists.length > 1 ? playlists.find(p => p.id !== id)?.id || null : null);
-  };
-
-  const renamePlaylist = (id: string) => {
-    setPlaylists(prev => prev.map(p => p.id === id ? { ...p, name: renameVal } : p));
-    setRenamingId(null);
+    if (activePlaylistId === id) {
+      const remaining = visiblePlaylists.filter(p => p.id !== id);
+      setActivePlaylistId(remaining[0]?.id || null);
+    }
   };
 
   const updateSongs = (songs: Song[]) => {
@@ -108,18 +127,16 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     if (!activePlaylist) return;
     const song: Song = { id: crypto.randomUUID(), name: 'Nova Música', bpm: 120, timeSignature: '4/4', notes: '', artist: '' };
     updateSongs([...activePlaylist.songs, song]);
+    setEditingSongId(song.id);
+    setEditForm(song);
+    setDurationInput('');
   };
 
   const addPause = () => {
     if (!activePlaylist) return;
     const pause: Song = {
-      id: crypto.randomUUID(),
-      name: '☕ INTERVALO',
-      bpm: 0,
-      timeSignature: '4/4',
-      notes: 'Pausa de 5 minutos',
-      isPause: true,
-      duration: 300,
+      id: crypto.randomUUID(), name: '☕ INTERVALO', bpm: 0, timeSignature: '4/4',
+      notes: 'Pausa de 5 minutos', isPause: true, duration: 300,
     };
     updateSongs([...activePlaylist.songs, pause]);
   };
@@ -127,6 +144,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   const deleteSong = (id: string) => {
     if (!activePlaylist) return;
     updateSongs(activePlaylist.songs.filter(s => s.id !== id));
+    if (editingSongId === id) setEditingSongId(null);
   };
 
   const startEdit = (song: Song) => {
@@ -142,16 +160,15 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     setEditingSongId(null);
   };
 
-  const moveSong = (index: number, dir: -1 | 1) => {
-    if (!activePlaylist) return;
-    const songs = [...activePlaylist.songs];
-    const newIdx = index + dir;
-    if (newIdx < 0 || newIdx >= songs.length) return;
-    [songs[index], songs[newIdx]] = [songs[newIdx], songs[index]];
-    updateSongs(songs);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !activePlaylist) return;
+    const oldIdx = activePlaylist.songs.findIndex(s => s.id === active.id);
+    const newIdx = activePlaylist.songs.findIndex(s => s.id === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    updateSongs(arrayMove(activePlaylist.songs, oldIdx, newIdx));
   };
 
-  // MusicBrainz search
   const searchMusicBrainz = async () => {
     if (!mbQuery.trim()) return;
     setMbLoading(true);
@@ -163,10 +180,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       });
       if (error) throw error;
       const results: MBResult[] = data?.results || [];
-      // Cache cover art
-      results.forEach(r => {
-        if (r.coverArt) coverArtCache.set(r.id, r.coverArt);
-      });
+      results.forEach(r => { if (r.coverArt) coverArtCache.set(r.id, r.coverArt); });
       setMbResults(results);
       if (!results.length) setMbError('Nenhum resultado encontrado.');
     } catch (err: any) {
@@ -197,18 +211,13 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     const wb = XLSX.utils.book_new();
     for (const pl of playlists) {
       const data = pl.songs.map((s, i) => ({
-        '#': i + 1,
-        Nome: s.name,
-        Artista: s.artist || '',
-        BPM: s.bpm,
-        Compasso: s.timeSignature,
+        '#': i + 1, Banda: pl.band || 'Geral', Nome: s.name, Artista: s.artist || '',
+        BPM: s.bpm, Compasso: s.timeSignature,
         'Duração': s.duration ? formatDuration(s.duration) : '',
-        Notas: s.notes,
-        Pausa: s.isPause ? 'Sim' : '',
+        Notas: s.notes, Pausa: s.isPause ? 'Sim' : '',
       }));
       const ws = XLSX.utils.json_to_sheet(data);
-      const sheetName = pl.name.substring(0, 31);
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      XLSX.utils.book_append_sheet(wb, ws, pl.name.substring(0, 31));
     }
     XLSX.writeFile(wb, 'BeatMaster_Setlists.xlsx');
   };
@@ -233,8 +242,9 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
         notes: r.Notas || r.notes || r.Notes || '',
         isPause: (r.Pausa === 'Sim' || r.isPause === true) ? true : undefined,
       }));
+      const band = rows[0]?.Banda || rows[0]?.band || 'Geral';
       if (songs.length > 0) {
-        newPlaylists.push({ id: crypto.randomUUID(), name: sheetName, songs });
+        newPlaylists.push({ id: crypto.randomUUID(), name: sheetName, songs, band });
       }
     }
     if (newPlaylists.length > 0) {
@@ -245,43 +255,51 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   };
 
   return (
-    <div className="glass rounded-2xl p-4 sm:p-5 space-y-3 sm:space-y-4">
-      <h2 className="text-base sm:text-lg font-semibold text-primary">📋 Setlist Manager</h2>
+    <div className="glass rounded-2xl p-3 sm:p-5 space-y-3 sm:space-y-4 min-w-0">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h2 className="text-base sm:text-lg font-semibold text-primary">📋 Setlist Manager</h2>
 
-      {/* Playlist tabs */}
+        {/* Band selector */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <Select value={selectedBand} onValueChange={setSelectedBand}>
+            <SelectTrigger className="h-8 text-xs w-[160px] sm:w-[200px]">
+              <SelectValue placeholder="Banda" />
+            </SelectTrigger>
+            <SelectContent className="z-50 bg-popover">
+              <SelectItem value={ALL_BANDS}>🎵 Todas as Bandas</SelectItem>
+              {bands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Playlist tabs (filtered by band) */}
       <ScrollArea className="w-full">
         <div className="flex gap-1.5 sm:gap-2 items-center pb-2 min-w-max">
-          {playlists.map(pl => (
+          {visiblePlaylists.map(pl => (
             <div key={pl.id} className="flex items-center gap-0.5 shrink-0">
-              {renamingId === pl.id ? (
-                <div className="flex gap-1">
-                  <Input value={renameVal} onChange={e => setRenameVal(e.target.value)} className="h-7 w-28 text-xs" />
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => renamePlaylist(pl.id)}><Check className="w-3 h-3" /></Button>
-                </div>
-              ) : (
-                <Button
-                  variant={activePlaylistId === pl.id ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setActivePlaylistId(pl.id)}
-                  onDoubleClick={() => { setRenamingId(pl.id); setRenameVal(pl.name); }}
-                  className="text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3"
-                >
-                  {pl.name}
-                </Button>
-              )}
+              <Button
+                variant={activePlaylistId === pl.id ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActivePlaylistId(pl.id)}
+                className="text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3"
+              >
+                {pl.name}
+              </Button>
               <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={() => deletePlaylist(pl.id)}>
                 <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               </Button>
             </div>
           ))}
           <div className="flex gap-1 shrink-0">
-            <Input placeholder="Nova..." value={newPlaylistName} onChange={e => setNewPlaylistName(e.target.value)} className="h-7 sm:h-8 w-20 sm:w-28 text-xs" />
+            <Input placeholder="Nova setlist..." value={newPlaylistName} onChange={e => setNewPlaylistName(e.target.value)} className="h-7 sm:h-8 w-24 sm:w-32 text-xs" />
             <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8" onClick={addPlaylist}><Plus className="w-3 h-3" /></Button>
           </div>
         </div>
       </ScrollArea>
 
-      {/* Import/Export + Search */}
+      {/* Toolbar */}
       <div className="flex flex-wrap gap-2 items-center">
         <Button variant="outline" size="sm" onClick={exportXlsx} disabled={playlists.length === 0} className="text-[10px] sm:text-xs gap-1 h-7">
           <Download className="w-3 h-3" /> Exportar
@@ -293,24 +311,17 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
           <input type="file" accept=".xlsx,.xls" className="hidden" onChange={importXlsx} />
         </label>
         {activePlaylist && (
-          <Button
-            variant="outline"
-            size="sm"
+          <Button variant="outline" size="sm"
             onClick={() => { setMbSearchOpen(true); setMbQuery(''); setMbResults([]); setMbError(''); }}
-            className="text-[10px] sm:text-xs gap-1 h-7"
-          >
+            className="text-[10px] sm:text-xs gap-1 h-7">
             <Globe className="w-3 h-3" /> Buscar Online
           </Button>
         )}
         {activePlaylist && (
           <div className="flex-1 min-w-[120px] relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Buscar música ou artista..."
-              className="h-7 text-xs pl-7"
-            />
+            <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Buscar música ou artista..." className="h-7 text-xs pl-7" />
           </div>
         )}
         {activePlaylist && (
@@ -318,182 +329,96 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
             <span>{filteredSongs.length} músicas</span>
             {totalDuration > 0 && (
               <span className="flex items-center gap-0.5">
-                <Clock className="w-2.5 h-2.5" />
-                {formatDuration(totalDuration)}
+                <Clock className="w-2.5 h-2.5" />{formatDuration(totalDuration)}
               </span>
             )}
           </div>
         )}
       </div>
 
-      {/* Song list */}
+      {/* Song list with DnD */}
       {activePlaylist && (
         <div className="space-y-1.5 sm:space-y-2 max-h-[40vh] sm:max-h-[45vh] overflow-y-auto pr-1">
-          {filteredSongs.map((song) => {
-            const idx = activePlaylist.songs.findIndex(s => s.id === song.id);
-            return (
-              <div
-                key={song.id}
-                className={cn(
-                  'rounded-xl p-2 sm:p-3 border transition-all cursor-pointer relative overflow-hidden group/song',
-                  song.isPause
-                    ? 'border-accent bg-accent/10 opacity-70'
-                    : activeSongId === song.id
-                      ? 'border-primary bg-primary/10 glow-purple'
-                      : 'border-border bg-muted/30 hover:bg-muted/50'
-                )}
-                onClick={() => { if (editingSongId !== song.id && !song.isPause) onSelectSong(song); }}
-              >
-                {/* Cover art background for active song */}
-                {!song.isPause && song.coverArt && activeSongId === song.id && (
-                  <div
-                    className="absolute inset-0 bg-cover bg-center opacity-[0.08] pointer-events-none transition-opacity duration-500"
-                    style={{ backgroundImage: `url(${song.coverArt})` }}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={filteredSongs.map(s => s.id)} strategy={verticalListSortingStrategy}>
+              {filteredSongs.map((song) => {
+                const idx = activePlaylist.songs.findIndex(s => s.id === song.id);
+                return (
+                  <SongCard
+                    key={song.id}
+                    song={song}
+                    index={idx}
+                    isActive={activeSongId === song.id}
+                    isEditing={editingSongId === song.id}
+                    editForm={editForm}
+                    setEditForm={setEditForm}
+                    durationInput={durationInput}
+                    setDurationInput={setDurationInput}
+                    onSelect={() => onSelectSong(song)}
+                    onStartEdit={() => startEdit(song)}
+                    onSaveEdit={saveEdit}
+                    onCancelEdit={() => setEditingSongId(null)}
+                    onDelete={() => deleteSong(song.id)}
                   />
-                )}
+                );
+              })}
+            </SortableContext>
+          </DndContext>
 
-                {editingSongId === song.id ? (
-                  <div className="space-y-2 relative z-10">
-                    <Input value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="Nome" className="h-7 sm:h-8 text-xs sm:text-sm" />
-                    <Input value={editForm.artist || ''} onChange={e => setEditForm({ ...editForm, artist: e.target.value })} placeholder="Artista" className="h-7 sm:h-8 text-xs sm:text-sm" />
-                    <div className="grid grid-cols-3 gap-2">
-                      <Input type="number" value={editForm.bpm || 120} onChange={e => setEditForm({ ...editForm, bpm: +e.target.value })} placeholder="BPM" className="h-7 sm:h-8 text-xs sm:text-sm" />
-                      <Select value={editForm.timeSignature || '4/4'} onValueChange={v => setEditForm({ ...editForm, timeSignature: v })}>
-                        <SelectTrigger className="h-7 sm:h-8 text-xs sm:text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>{timeSignatures.map(ts => <SelectItem key={ts} value={ts}>{ts}</SelectItem>)}</SelectContent>
-                      </Select>
-                      <Input
-                        value={durationInput}
-                        onChange={e => setDurationInput(e.target.value)}
-                        placeholder="m:ss"
-                        className="h-7 sm:h-8 text-xs sm:text-sm"
-                      />
-                    </div>
-                    <Textarea value={editForm.notes || ''} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Notas..." className="text-xs sm:text-sm min-h-[36px]" />
-                    <div className="flex gap-1">
-                      <Button size="sm" onClick={saveEdit} className="text-[10px] sm:text-xs gap-1 h-7"><Check className="w-3 h-3" /> Salvar</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingSongId(null)} className="text-[10px] sm:text-xs gap-1 h-7"><X className="w-3 h-3" /></Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-2 relative z-10">
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                      <span className="text-[10px] sm:text-xs text-muted-foreground w-4 sm:w-5 text-right shrink-0">{idx + 1}</span>
-                      {song.isPause ? (
-                        <Coffee className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent shrink-0" />
-                      ) : song.coverArt ? (
-                        <img
-                          src={song.coverArt}
-                          alt=""
-                          className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg object-cover shrink-0 shadow-md ring-1 ring-border/20"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                          <Music className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <div className="font-medium text-xs sm:text-sm truncate">{song.name}</div>
-                        <div className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                          {song.isPause
-                            ? formatDuration(song.duration)
-                            : <>
-                                {song.artist && <span className="text-primary/70">{song.artist} · </span>}
-                                {song.bpm} BPM · {song.timeSignature}
-                                {song.duration ? ` · ${formatDuration(song.duration)}` : ''}
-                              </>
-                          }
-                        </div>
-                        {song.notes && !song.isPause && (
-                          <div className="text-[9px] text-muted-foreground/60 truncate mt-0.5">{song.notes}</div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-0.5 shrink-0 opacity-60 group-hover/song:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={(e) => { e.stopPropagation(); moveSong(idx, -1); }}>
-                        <ChevronUp className="w-3 h-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={(e) => { e.stopPropagation(); moveSong(idx, 1); }}>
-                        <ChevronDown className="w-3 h-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={(e) => { e.stopPropagation(); startEdit(song); }}>
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={(e) => { e.stopPropagation(); deleteSong(song.id); }}>
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={addSong} className="flex-1 text-[10px] sm:text-xs gap-1 h-7 sm:h-8">
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={addSong} className="flex-1 text-xs gap-1 h-8">
               <Plus className="w-3 h-3" /> Adicionar Música
             </Button>
-            <Button variant="outline" size="sm" onClick={addPause} className="text-[10px] sm:text-xs gap-1 h-7 sm:h-8">
+            <Button variant="outline" size="sm" onClick={addPause} className="text-xs gap-1 h-8">
               <Coffee className="w-3 h-3" /> Pausa
             </Button>
           </div>
+          <p className="text-[9px] text-muted-foreground/60 text-center pt-1">
+            💡 Arraste o ⋮⋮ para reordenar · Segure 0,5s ou clique direito para editar
+          </p>
         </div>
       )}
 
       {!activePlaylist && (
         <div className="text-center text-muted-foreground text-xs sm:text-sm py-6 sm:py-8">
-          Crie ou selecione uma playlist para começar.
+          Crie ou selecione uma setlist para começar.
         </div>
       )}
 
-      {/* MusicBrainz Search Modal */}
+      {/* MusicBrainz Search */}
       <Dialog open={mbSearchOpen} onOpenChange={setMbSearchOpen}>
         <DialogContent className="glass border-border max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Globe className="w-4 h-4 text-primary" />
-              Buscar Música Online
+              <Globe className="w-4 h-4 text-primary" /> Buscar Música Online
             </DialogTitle>
           </DialogHeader>
           <div className="flex gap-2">
-            <Input
-              value={mbQuery}
-              onChange={e => setMbQuery(e.target.value)}
-              placeholder="Nome da música ou artista..."
-              className="text-sm"
-              onKeyDown={e => { if (e.key === 'Enter') searchMusicBrainz(); }}
-            />
+            <Input value={mbQuery} onChange={e => setMbQuery(e.target.value)}
+              placeholder="Nome da música ou artista..." className="text-sm"
+              onKeyDown={e => { if (e.key === 'Enter') searchMusicBrainz(); }} />
             <Button onClick={searchMusicBrainz} disabled={mbLoading || !mbQuery.trim()} className="gap-1 shrink-0">
               {mbLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               Buscar
             </Button>
           </div>
-
-          {mbError && (
-            <p className="text-xs text-destructive">{mbError}</p>
-          )}
-
+          {mbError && <p className="text-xs text-destructive">{mbError}</p>}
           {mbLoading && (
             <div className="space-y-2 py-2">
               {[1, 2, 3].map(i => (
                 <div key={i} className="flex items-center gap-3 p-2.5">
                   <Skeleton className="w-10 h-10 rounded" />
                   <div className="flex-1 space-y-1.5">
-                    <Skeleton className="h-3.5 w-3/4" />
-                    <Skeleton className="h-2.5 w-1/2" />
+                    <Skeleton className="h-3.5 w-3/4" /><Skeleton className="h-2.5 w-1/2" />
                   </div>
                 </div>
               ))}
             </div>
           )}
-
           <ScrollArea className="flex-1 max-h-[400px]">
             <div className="space-y-1.5 pr-2">
               {mbResults.map((result) => (
-                <div
-                  key={result.id}
-                  className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors animate-fade-in"
-                >
+                <div key={result.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors animate-fade-in">
                   {result.coverArt ? (
                     <img src={result.coverArt} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 shadow-sm" loading="lazy" />
                   ) : (
@@ -510,21 +435,15 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                       {result.duration && <span> · {formatDuration(result.duration)}</span>}
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7 gap-1 shrink-0"
-                    onClick={() => addFromMB(result)}
-                  >
+                  <Button size="sm" variant="outline" className="text-xs h-7 gap-1 shrink-0" onClick={() => addFromMB(result)}>
                     <Plus className="w-3 h-3" /> Adicionar
                   </Button>
                 </div>
               ))}
             </div>
           </ScrollArea>
-
           <p className="text-[9px] text-muted-foreground text-center">
-            Dados fornecidos por MusicBrainz · BPM padrão: 120 (ajuste manualmente)
+            Dados via MusicBrainz · BPM padrão: 120 (ajuste manualmente)
           </p>
         </DialogContent>
       </Dialog>

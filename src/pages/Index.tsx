@@ -21,6 +21,8 @@ const skins: { id: SkinColor; label: string; color: string }[] = [
   { id: 'orange', label: 'Laranja', color: 'bg-orange-500' },
 ];
 
+const ALL_BANDS = '__all__';
+
 const Index = () => {
   const metro = useMetronome();
   const [playlists, setPlaylists] = useLocalStorage<Playlist[]>('bm-playlists', []);
@@ -29,28 +31,33 @@ const Index = () => {
   const [mode, setMode] = useLocalStorage<AppMode>('bm-mode', 'free');
   const [isDark, setIsDark] = useLocalStorage<boolean>('bm-dark-mode', true);
   const [skin, setSkin] = useLocalStorage<SkinColor>('bm-skin', 'purple');
-  const [countInMeasures, setCountInMeasures] = useLocalStorage<number>('bm-count-in-measures', 2);
-  const [countOutMeasures, setCountOutMeasures] = useLocalStorage<number>('bm-count-out-measures', 2);
+  const [selectedBand, setSelectedBand] = useLocalStorage<string>('bm-selected-band', ALL_BANDS);
+  const [ttsEnabled, setTtsEnabled] = useLocalStorage<boolean>('bm-tts-enabled', true);
   const [showSkinPicker, setShowSkinPicker] = useState(false);
   const [padTrigger, setPadTrigger] = useState<{ padId: number; type: 'down' | 'up' } | null>(null);
 
-  // Seed default playlists on first load
+  // Seed defaults
   useEffect(() => {
     if (playlists.length === 0) {
       setPlaylists(defaultPlaylists);
       setActivePlaylistId(defaultPlaylists[0].id);
     }
-  }, []);
+  }, []); // eslint-disable-line
 
-  // Theme + skin toggle
+  // Migrate: ensure all playlists have a band
+  useEffect(() => {
+    const hasMissing = playlists.some(p => !p.band);
+    if (hasMissing) {
+      setPlaylists(prev => prev.map(p => p.band ? p : { ...p, band: 'Geral' }));
+    }
+  }, [playlists, setPlaylists]);
+
+  // Theme + skin
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('light', !isDark);
     root.classList.remove('skin-blue', 'skin-green', 'skin-red', 'skin-orange');
-    if (skin !== 'purple') {
-      root.classList.add(`skin-${skin}`);
-    }
-    // Lock body scroll
+    if (skin !== 'purple') root.classList.add(`skin-${skin}`);
     document.body.style.overflow = 'hidden';
     document.body.style.height = '100vh';
     return () => {
@@ -68,7 +75,7 @@ const Index = () => {
       metro.setBpm(song.bpm);
       metro.setTimeSignature(song.timeSignature);
     }
-  }, [mode, metro]);
+  }, [mode, metro, setActiveSongId]);
 
   const navigateSong = useCallback((dir: 1 | -1) => {
     if (!activePlaylist || mode === 'free') return;
@@ -79,7 +86,6 @@ const Index = () => {
     }
   }, [activePlaylist, activeSongId, mode, onSelectSong]);
 
-  // Auto-advance when song duration ends
   const handleSongEnd = useCallback(() => {
     if (!activePlaylist || mode !== 'setlist') return;
     const idx = activePlaylist.songs.findIndex(s => s.id === activeSongId);
@@ -96,9 +102,8 @@ const Index = () => {
     const idx = playlists.findIndex(p => p.id === activePlaylistId);
     const next = (idx + 1) % playlists.length;
     setActivePlaylistId(playlists[next].id);
-  }, [playlists, activePlaylistId]);
+  }, [playlists, activePlaylistId, setActivePlaylistId]);
 
-  // Keyboard shortcuts
   useKeyboardShortcuts({
     onPadTrigger: (padId, type) => setPadTrigger({ padId, type }),
     onToggleMetronome: metro.toggle,
@@ -113,15 +118,12 @@ const Index = () => {
 
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden">
-      {/* Header */}
       <header className="flex items-center justify-between py-2 sm:py-3 px-3 sm:px-4 max-w-6xl mx-auto w-full shrink-0">
-        <div>
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-primary">
-            🎵 BeatMaster
-          </h1>
-          <p className="text-[8px] sm:text-[10px] text-muted-foreground mt-0.5">Metrônomo · Setlist · Sampler</p>
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-primary truncate">🎵 BeatMaster</h1>
+          <p className="text-[8px] sm:text-[10px] text-muted-foreground mt-0.5 truncate">Metrônomo · Setlist · Sampler</p>
         </div>
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <div className="relative">
             <Button variant="ghost" size="icon" onClick={() => setShowSkinPicker(!showSkinPicker)} className="h-7 w-7 sm:h-8 sm:w-8">
               <Palette className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -132,13 +134,10 @@ const Index = () => {
                 <div className="absolute right-0 top-full mt-2 z-50 glass rounded-xl p-3 min-w-[140px] space-y-2 animate-scale-in">
                   <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Skin</p>
                   {skins.map(s => (
-                    <button
-                      key={s.id}
+                    <button key={s.id}
                       onClick={() => { setSkin(s.id); setShowSkinPicker(false); }}
-                      className={`flex items-center gap-2 w-full text-xs py-1.5 px-2 rounded-lg transition-colors hover:bg-secondary/50 ${skin === s.id ? 'bg-secondary text-foreground' : 'text-muted-foreground'}`}
-                    >
-                      <div className={`w-3 h-3 rounded-full ${s.color}`} />
-                      {s.label}
+                      className={`flex items-center gap-2 w-full text-xs py-1.5 px-2 rounded-lg transition-colors hover:bg-secondary/50 ${skin === s.id ? 'bg-secondary text-foreground' : 'text-muted-foreground'}`}>
+                      <div className={`w-3 h-3 rounded-full ${s.color}`} />{s.label}
                     </button>
                   ))}
                 </div>
@@ -151,10 +150,9 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Main - fills remaining space */}
-      <main className="flex-1 overflow-y-auto pb-[88px] sm:pb-[72px] px-3 sm:px-4">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[320px_1fr] xl:grid-cols-[340px_1fr] gap-3 sm:gap-4">
-          <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100dvh-140px)] lg:overflow-y-auto">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden pb-[88px] sm:pb-[72px] px-2 sm:px-4">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[300px_1fr] xl:grid-cols-[320px_1fr] gap-3 sm:gap-4 min-w-0">
+          <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100dvh-140px)] lg:overflow-y-auto min-w-0">
             <Metronome
               isPlaying={metro.isPlaying}
               bpm={metro.bpm}
@@ -179,7 +177,7 @@ const Index = () => {
             />
           </div>
 
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-3 sm:space-y-4 min-w-0">
             <SetlistManager
               playlists={playlists}
               setPlaylists={setPlaylists}
@@ -187,6 +185,8 @@ const Index = () => {
               setActivePlaylistId={setActivePlaylistId}
               activeSongId={activeSongId}
               onSelectSong={onSelectSong}
+              selectedBand={selectedBand}
+              setSelectedBand={setSelectedBand}
             />
             <SamplerPad
               getAudioContext={metro.getAudioContext}
@@ -197,7 +197,6 @@ const Index = () => {
         </div>
       </main>
 
-      {/* Footer Player */}
       <FooterPlayer
         isPlaying={metro.isPlaying}
         toggle={metro.toggle}
@@ -216,10 +215,8 @@ const Index = () => {
         countIn={metro.countIn}
         setCountIn={metro.setCountIn}
         onSongEnd={handleSongEnd}
-        countInMeasures={countInMeasures}
-        setCountInMeasures={setCountInMeasures}
-        countOutMeasures={countOutMeasures}
-        setCountOutMeasures={setCountOutMeasures}
+        ttsEnabled={ttsEnabled}
+        setTtsEnabled={setTtsEnabled}
       />
     </div>
   );

@@ -4,8 +4,8 @@ function song(name: string, bpm: number, ts: string, notes = '', artist = '', du
   return { id: crypto.randomUUID(), name, bpm, timeSignature: ts, notes, artist, duration };
 }
 
-function playlist(name: string, songs: Song[]): Playlist {
-  return { id: crypto.randomUUID(), name, songs };
+function playlist(name: string, songs: Song[], band = 'Geral'): Playlist {
+  return { id: crypto.randomUUID(), name, songs, band };
 }
 
 export const defaultPlaylists: Playlist[] = [
@@ -50,7 +50,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Losing My Religion', 125, '4/4', '', 'R.E.M.'),
     song('Under the Bridge', 84, '4/4', '', 'Red Hot Chili Peppers'),
     song('Zombie', 86, '4/4', '', 'The Cranberries'),
-  ]),
+  ], 'Covers Variados'),
 
   playlist('Metallica', [
     song('NOTHING ELSE', 142, '6/8', '', 'Metallica'),
@@ -68,7 +68,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Wherever I May Roam', 132, '4/4', '', 'Metallica'),
     song('King Nothing', 112, '4/4', '', 'Metallica'),
     song('The Memory Remains', 148, '4/4', '', 'Metallica'),
-  ]),
+  ], 'Metallica Tribute'),
 
   playlist('Metallica Completa', [
     song('HINO NACIONAL', 120, '4/4'),
@@ -99,7 +99,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Harvester of Sorrow', 118, '4/4', '', 'Metallica'),
     song('...And Justice for All', 94, '4/4', '', 'Metallica'),
     song('Disposable Heroes', 220, '4/4', '', 'Metallica'),
-  ]),
+  ], 'Metallica Tribute'),
 
   playlist('Nu-Metal Mix', [
     song('Rotting in Vain', 106, '4/4', '', 'Korn'),
@@ -132,7 +132,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Last Resort', 90, '4/4', '', 'Papa Roach'),
     song('Bodies', 128, '4/4', '', 'Drowning Pool'),
     song('Click Click Boom', 100, '4/4', '', 'Saliva'),
-  ]),
+  ], 'Banda New Metal'),
 
   playlist('Slipknot', [
     song('NAMELESS', 210, '4/4', '', 'Slipknot'),
@@ -152,7 +152,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Nero Forte', 100, '4/4', '', 'Slipknot'),
     song('Custer', 135, '4/4', '', 'Slipknot'),
     song('The Heretic Anthem', 204, '4/4', '', 'Slipknot'),
-  ]),
+  ], 'Slipknot Tribute'),
 
   playlist('Sepultura & Pantera', [
     song('ARISE / DEAD EMBRIONIC CELLS', 120, '4/4', '', 'Sepultura'),
@@ -174,7 +174,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Slave New World', 100, '4/4', '', 'Sepultura'),
     song('Domination', 140, '4/4', '', 'Pantera'),
     song("I'm Broken", 78, '4/4', '', 'Pantera'),
-  ]),
+  ], 'Covers Variados'),
 
   playlist('Unjust Hands', [
     song('UNJUST HANDS', 160, '4/4', '', 'Unjust Hands'),
@@ -188,7 +188,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Crimson Tide', 200, '4/4', '', 'Unjust Hands'),
     song('Final Reckoning', 175, '4/4', '', 'Unjust Hands'),
     song('Beneath a Broken Sky', 150, '6/8', '', 'Unjust Hands'),
-  ]),
+  ], 'Unjust Hands'),
 
   playlist('Banda New Metal', [
     song('Freak on a Leash', 103, '4/4', '', 'Korn'),
@@ -270,7 +270,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Skin It Back', 110, '3/4', '', 'Static-X'),
     song("I'm With You", 105, '6/8', '', 'Avril Lavigne'),
     song('Vermilion Pt. 2', 60, '3/4', '', 'Slipknot'),
-  ]),
+  ], 'Banda New Metal'),
 
   playlist('Prog Rock', [
     song('Pull Me Under', 104, '4/4', '', 'Dream Theater'),
@@ -287,7 +287,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Octavarium', 118, '5/4', '', 'Dream Theater'),
     song('Lateralus', 90, '9/8', 'sequência de Fibonacci', 'Tool'),
     song('La Villa Strangiato', 136, '4/4', '', 'Rush'),
-  ]),
+  ], 'Covers Variados'),
 
   playlist('Industrial Metal', [
     song('Du Hast', 125, '4/4', '', 'Rammstein'),
@@ -302,7 +302,7 @@ export const defaultPlaylists: Playlist[] = [
     song('The Dope Show', 130, '4/4', '', 'Marilyn Manson'),
     song('Just One Fix', 145, '4/4', '', 'Ministry'),
     song('Terrible Lie', 115, '4/4', '', 'Nine Inch Nails'),
-  ]),
+  ], 'Covers Variados'),
 
   playlist('Rock Nacional', [
     song('Que País É Este', 160, '4/4', '', 'Legião Urbana'),
@@ -317,7 +317,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Vou Deixar', 130, '4/4', '', 'Skank'),
     song('Primeiros Erros', 150, '4/4', '', 'Capital Inicial'),
     song('Mulher de Fases', 100, '4/4', '', 'Raimundos'),
-  ]),
+  ], 'Rock Nacional'),
 
   playlist('Indie Rock', [
     song('Last Nite', 104, '4/4', '', 'The Strokes'),
@@ -332,7 +332,7 @@ export const defaultPlaylists: Playlist[] = [
     song('Somebody Told Me', 138, '4/4', '', 'The Killers'),
     song('R U Mine?', 97, '4/4', '', 'Arctic Monkeys'),
     song('Obstacle 1', 148, '4/4', '', 'Interpol'),
-  ]),
+  ], 'Covers Variados'),
 ];
 
 export const defaultPadConfigs: PadConfig[] = [

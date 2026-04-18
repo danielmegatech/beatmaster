@@ -1,11 +1,12 @@
 import React, { useRef, useCallback } from 'react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Edit2, Check, X, Music, Coffee, GripVertical } from 'lucide-react';
+import {
+  Trash2, Edit2, Check, X, Music, Coffee,
+  ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Play,
+} from 'lucide-react';
 import type { Song } from '@/types/beatmaster';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +22,7 @@ function formatDuration(seconds?: number): string {
 interface Props {
   song: Song;
   index: number;
+  total: number;
   isActive: boolean;
   isEditing: boolean;
   editForm: Partial<Song>;
@@ -32,26 +34,15 @@ interface Props {
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onDelete: () => void;
+  onMove: (dir: 'up' | 'down' | 'top' | 'bottom') => void;
 }
 
 const SongCard: React.FC<Props> = ({
-  song, index, isActive, isEditing,
+  song, index, total, isActive, isEditing,
   editForm, setEditForm, durationInput, setDurationInput,
-  onSelect, onStartEdit, onSaveEdit, onCancelEdit, onDelete,
+  onSelect, onStartEdit, onSaveEdit, onCancelEdit, onDelete, onMove,
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: song.id,
-    disabled: isEditing,
-  });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : 'auto',
-  };
-
-  // Long-press for editing on mobile / right-click on desktop
+  // Long-press for editing on mobile
   const pressTimerRef = useRef<number | null>(null);
   const longPressedRef = useRef(false);
 
@@ -60,7 +51,6 @@ const SongCard: React.FC<Props> = ({
     pressTimerRef.current = window.setTimeout(() => {
       longPressedRef.current = true;
       onStartEdit();
-      // Haptic feedback if available
       if ('vibrate' in navigator) navigator.vibrate(50);
     }, 500);
   }, [onStartEdit]);
@@ -82,26 +72,23 @@ const SongCard: React.FC<Props> = ({
     onStartEdit();
   }, [onStartEdit]);
 
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className={cn(
         'rounded-xl p-2 sm:p-3 border transition-all relative overflow-hidden group/song touch-manipulation',
         song.isPause
           ? 'border-accent bg-accent/10 opacity-70'
           : isActive
-            ? 'border-primary bg-primary/10 glow-purple'
+            ? 'border-primary bg-primary/15 glow-purple ring-2 ring-primary/40'
             : 'border-border bg-muted/30 hover:bg-muted/50',
-        isDragging && 'shadow-2xl ring-2 ring-primary'
       )}
     >
-      {/* Cover art bg for active */}
-      {!song.isPause && song.coverArt && isActive && (
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-[0.08] pointer-events-none"
-          style={{ backgroundImage: `url(${song.coverArt})` }}
-        />
+      {/* Active indicator stripe */}
+      {isActive && !song.isPause && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" aria-hidden />
       )}
 
       {isEditing ? (
@@ -134,30 +121,26 @@ const SongCard: React.FC<Props> = ({
           onPointerCancel={cancelPress}
         >
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            {/* Drag handle */}
-            <button
-              type="button"
-              {...attributes}
-              {...listeners}
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="touch-none p-1 -ml-1 text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing shrink-0"
-              aria-label="Arrastar para reordenar"
-            >
-              <GripVertical className="w-3.5 h-3.5" />
-            </button>
-            <span className="text-[10px] sm:text-xs text-muted-foreground w-4 sm:w-5 text-right shrink-0">{index + 1}</span>
+            <span className={cn(
+              "text-[10px] sm:text-xs w-5 sm:w-6 text-right shrink-0 tabular-nums",
+              isActive ? "text-primary font-bold" : "text-muted-foreground"
+            )}>
+              {isActive && !song.isPause ? <Play className="w-3 h-3 inline fill-primary text-primary" /> : index + 1}
+            </span>
             {song.isPause ? (
               <Coffee className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent shrink-0" />
-            ) : song.coverArt ? (
-              <img src={song.coverArt} alt="" className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg object-cover shrink-0 shadow-md ring-1 ring-border/20" loading="lazy" />
             ) : (
-              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                <Music className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+              <div className={cn(
+                "w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0",
+                isActive ? "bg-primary/20" : "bg-muted/50"
+              )}>
+                <Music className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isActive ? "text-primary" : "text-muted-foreground")} />
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <div className="font-medium text-xs sm:text-sm truncate">{song.name}</div>
+              <div className={cn("font-medium text-xs sm:text-sm truncate", isActive && !song.isPause && "text-primary")}>
+                {song.name}
+              </div>
               <div className="text-[10px] sm:text-xs text-muted-foreground truncate">
                 {song.isPause
                   ? formatDuration(song.duration)
@@ -168,16 +151,31 @@ const SongCard: React.FC<Props> = ({
                     </>
                 }
               </div>
-              {song.notes && !song.isPause && (
-                <div className="text-[9px] text-muted-foreground/60 truncate mt-0.5">{song.notes}</div>
-              )}
             </div>
           </div>
-          <div className="flex items-center gap-0.5 shrink-0 opacity-60 group-hover/song:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }} title="Editar (clique direito ou segure)">
+
+          {/* Reorder + actions buttons */}
+          <div className="flex items-center gap-0 shrink-0 opacity-70 group-hover/song:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="h-7 w-6" disabled={isFirst}
+              onClick={(e) => { e.stopPropagation(); onMove('top'); }} title="Mover para o início">
+              <ChevronsUp className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-6" disabled={isFirst}
+              onClick={(e) => { e.stopPropagation(); onMove('up'); }} title="Mover para cima">
+              <ChevronUp className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-6" disabled={isLast}
+              onClick={(e) => { e.stopPropagation(); onMove('down'); }} title="Mover para baixo">
+              <ChevronDown className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-6" disabled={isLast}
+              onClick={(e) => { e.stopPropagation(); onMove('bottom'); }} title="Mover para o fim">
+              <ChevronsDown className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 ml-1" onClick={(e) => { e.stopPropagation(); onStartEdit(); }} title="Editar">
               <Edit2 className="w-3 h-3" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Remover">
               <Trash2 className="w-3 h-3" />
             </Button>
           </div>

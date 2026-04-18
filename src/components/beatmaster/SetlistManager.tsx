@@ -8,12 +8,8 @@ import {
 } from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Trash2, Check, Download, Upload, Music, Search, Clock, Coffee, Globe, Loader2, Users } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Plus, Trash2, Download, Upload, Search, Clock, Coffee } from 'lucide-react';
 import type { Song, Playlist } from '@/types/beatmaster';
 import SongCard from './SongCard';
 
@@ -28,19 +24,6 @@ interface SetlistManagerProps {
   setSelectedBand: (b: string) => void;
 }
 
-interface MBResult {
-  id: string;
-  name: string;
-  artist: string;
-  duration?: number;
-  timeSignature: string;
-  bpm: number;
-  album: string;
-  year: string;
-  coverArt?: string;
-}
-
-const coverArtCache = new Map<string, string | undefined>();
 const ALL_BANDS = '__all__';
 
 function formatDuration(seconds?: number): string {
@@ -60,7 +43,7 @@ function parseDuration(str: string): number | undefined {
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   playlists, setPlaylists, activePlaylistId, setActivePlaylistId, activeSongId, onSelectSong,
-  selectedBand, setSelectedBand,
+  selectedBand,
 }) => {
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Song>>({});
@@ -68,25 +51,13 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [durationInput, setDurationInput] = useState('');
 
-  const [mbSearchOpen, setMbSearchOpen] = useState(false);
-  const [mbQuery, setMbQuery] = useState('');
-  const [mbResults, setMbResults] = useState<MBResult[]>([]);
-  const [mbLoading, setMbLoading] = useState(false);
-  const [mbError, setMbError] = useState('');
-
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // Bands list (unique, sorted)
-  const bands = useMemo(() => {
-    const set = new Set(playlists.map(p => p.band || 'Geral'));
-    return Array.from(set).sort();
-  }, [playlists]);
-
-  // Filtered playlists by selected band
+  // Filtered playlists by selected band (band selector lives in header)
   const visiblePlaylists = useMemo(() => {
     if (selectedBand === ALL_BANDS) return playlists;
     return playlists.filter(p => (p.band || 'Geral') === selectedBand);
@@ -169,43 +140,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     updateSongs(arrayMove(activePlaylist.songs, oldIdx, newIdx));
   };
 
-  const searchMusicBrainz = async () => {
-    if (!mbQuery.trim()) return;
-    setMbLoading(true);
-    setMbError('');
-    setMbResults([]);
-    try {
-      const { data, error } = await supabase.functions.invoke('musicbrainz-search', {
-        body: { query: mbQuery.trim(), limit: 15 },
-      });
-      if (error) throw error;
-      const results: MBResult[] = data?.results || [];
-      results.forEach(r => { if (r.coverArt) coverArtCache.set(r.id, r.coverArt); });
-      setMbResults(results);
-      if (!results.length) setMbError('Nenhum resultado encontrado.');
-    } catch (err: any) {
-      setMbError(err.message || 'Erro ao buscar.');
-    } finally {
-      setMbLoading(false);
-    }
-  };
-
-  const addFromMB = (result: MBResult) => {
-    if (!activePlaylist) return;
-    const song: Song = {
-      id: crypto.randomUUID(),
-      name: result.name,
-      artist: result.artist,
-      bpm: result.bpm,
-      timeSignature: result.timeSignature,
-      duration: result.duration,
-      coverArt: result.coverArt || coverArtCache.get(result.id),
-      album: result.album,
-      notes: result.album ? `Álbum: ${result.album}${result.year ? ` (${result.year})` : ''}` : '',
-    };
-    updateSongs([...activePlaylist.songs, song]);
-  };
-
   const exportXlsx = async () => {
     const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
@@ -258,23 +192,9 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     <div className="glass rounded-2xl p-3 sm:p-5 space-y-3 sm:space-y-4 min-w-0">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-base sm:text-lg font-semibold text-primary">📋 Setlist Manager</h2>
-
-        {/* Band selector */}
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-          <Select value={selectedBand} onValueChange={setSelectedBand}>
-            <SelectTrigger className="h-8 text-xs w-[160px] sm:w-[200px]">
-              <SelectValue placeholder="Banda" />
-            </SelectTrigger>
-            <SelectContent className="z-50 bg-popover">
-              <SelectItem value={ALL_BANDS}>🎵 Todas as Bandas</SelectItem>
-              {bands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
-      {/* Playlist tabs (filtered by band) */}
+      {/* Playlist tabs (filtered by band selected in header) */}
       <ScrollArea className="w-full">
         <div className="flex gap-1.5 sm:gap-2 items-center pb-2 min-w-max">
           {visiblePlaylists.map(pl => (
@@ -293,7 +213,13 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
             </div>
           ))}
           <div className="flex gap-1 shrink-0">
-            <Input placeholder="Nova setlist..." value={newPlaylistName} onChange={e => setNewPlaylistName(e.target.value)} className="h-7 sm:h-8 w-24 sm:w-32 text-xs" />
+            <Input
+              placeholder="Nova setlist..."
+              value={newPlaylistName}
+              onChange={e => setNewPlaylistName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPlaylist(); } }}
+              className="h-7 sm:h-8 w-24 sm:w-32 text-xs"
+            />
             <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8" onClick={addPlaylist}><Plus className="w-3 h-3" /></Button>
           </div>
         </div>
@@ -310,13 +236,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
           </Button>
           <input type="file" accept=".xlsx,.xls" className="hidden" onChange={importXlsx} />
         </label>
-        {activePlaylist && (
-          <Button variant="outline" size="sm"
-            onClick={() => { setMbSearchOpen(true); setMbQuery(''); setMbResults([]); setMbError(''); }}
-            className="text-[10px] sm:text-xs gap-1 h-7">
-            <Globe className="w-3 h-3" /> Buscar Online
-          </Button>
-        )}
         {activePlaylist && (
           <div className="flex-1 min-w-[120px] relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
@@ -373,9 +292,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
               <Coffee className="w-3 h-3" /> Pausa
             </Button>
           </div>
-          <p className="text-[9px] text-muted-foreground/60 text-center pt-1">
-            💡 Arraste o ⋮⋮ para reordenar · Segure 0,5s ou clique direito para editar
-          </p>
         </div>
       )}
 
@@ -384,69 +300,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
           Crie ou selecione uma setlist para começar.
         </div>
       )}
-
-      {/* MusicBrainz Search */}
-      <Dialog open={mbSearchOpen} onOpenChange={setMbSearchOpen}>
-        <DialogContent className="glass border-border max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Globe className="w-4 h-4 text-primary" /> Buscar Música Online
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex gap-2">
-            <Input value={mbQuery} onChange={e => setMbQuery(e.target.value)}
-              placeholder="Nome da música ou artista..." className="text-sm"
-              onKeyDown={e => { if (e.key === 'Enter') searchMusicBrainz(); }} />
-            <Button onClick={searchMusicBrainz} disabled={mbLoading || !mbQuery.trim()} className="gap-1 shrink-0">
-              {mbLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-              Buscar
-            </Button>
-          </div>
-          {mbError && <p className="text-xs text-destructive">{mbError}</p>}
-          {mbLoading && (
-            <div className="space-y-2 py-2">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="flex items-center gap-3 p-2.5">
-                  <Skeleton className="w-10 h-10 rounded" />
-                  <div className="flex-1 space-y-1.5">
-                    <Skeleton className="h-3.5 w-3/4" /><Skeleton className="h-2.5 w-1/2" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          <ScrollArea className="flex-1 max-h-[400px]">
-            <div className="space-y-1.5 pr-2">
-              {mbResults.map((result) => (
-                <div key={result.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors animate-fade-in">
-                  {result.coverArt ? (
-                    <img src={result.coverArt} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 shadow-sm" loading="lazy" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                      <Music className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium text-sm truncate">{result.name}</div>
-                    <div className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                      {result.artist && <span className="text-primary/70">{result.artist}</span>}
-                      {result.album && <span> · {result.album}</span>}
-                      {result.year && <span> ({result.year})</span>}
-                      {result.duration && <span> · {formatDuration(result.duration)}</span>}
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline" className="text-xs h-7 gap-1 shrink-0" onClick={() => addFromMB(result)}>
-                    <Plus className="w-3 h-3" /> Adicionar
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-          <p className="text-[9px] text-muted-foreground text-center">
-            Dados via MusicBrainz · BPM padrão: 120 (ajuste manualmente)
-          </p>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

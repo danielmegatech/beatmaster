@@ -1,11 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
-  useSensor, useSensors, DragEndEvent
-} from '@dnd-kit/core';
-import {
-  arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy
-} from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -50,12 +43,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [durationInput, setDurationInput] = useState('');
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
 
   // Filtered playlists by selected band (band selector lives in header)
   const visiblePlaylists = useMemo(() => {
@@ -131,13 +118,20 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     setEditingSongId(null);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id || !activePlaylist) return;
-    const oldIdx = activePlaylist.songs.findIndex(s => s.id === active.id);
-    const newIdx = activePlaylist.songs.findIndex(s => s.id === over.id);
-    if (oldIdx < 0 || newIdx < 0) return;
-    updateSongs(arrayMove(activePlaylist.songs, oldIdx, newIdx));
+  const moveSong = (id: string, dir: 'up' | 'down' | 'top' | 'bottom') => {
+    if (!activePlaylist) return;
+    const songs = [...activePlaylist.songs];
+    const idx = songs.findIndex(s => s.id === id);
+    if (idx < 0) return;
+    let newIdx = idx;
+    if (dir === 'up') newIdx = Math.max(0, idx - 1);
+    else if (dir === 'down') newIdx = Math.min(songs.length - 1, idx + 1);
+    else if (dir === 'top') newIdx = 0;
+    else if (dir === 'bottom') newIdx = songs.length - 1;
+    if (newIdx === idx) return;
+    const [item] = songs.splice(idx, 1);
+    songs.splice(newIdx, 0, item);
+    updateSongs(songs);
   };
 
   const exportXlsx = async () => {
@@ -255,34 +249,32 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
         )}
       </div>
 
-      {/* Song list with DnD */}
+      {/* Song list with reorder buttons */}
       {activePlaylist && (
         <div className="space-y-1.5 sm:space-y-2 max-h-[40vh] sm:max-h-[45vh] overflow-y-auto pr-1">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={filteredSongs.map(s => s.id)} strategy={verticalListSortingStrategy}>
-              {filteredSongs.map((song) => {
-                const idx = activePlaylist.songs.findIndex(s => s.id === song.id);
-                return (
-                  <SongCard
-                    key={song.id}
-                    song={song}
-                    index={idx}
-                    isActive={activeSongId === song.id}
-                    isEditing={editingSongId === song.id}
-                    editForm={editForm}
-                    setEditForm={setEditForm}
-                    durationInput={durationInput}
-                    setDurationInput={setDurationInput}
-                    onSelect={() => onSelectSong(song)}
-                    onStartEdit={() => startEdit(song)}
-                    onSaveEdit={saveEdit}
-                    onCancelEdit={() => setEditingSongId(null)}
-                    onDelete={() => deleteSong(song.id)}
-                  />
-                );
-              })}
-            </SortableContext>
-          </DndContext>
+          {filteredSongs.map((song) => {
+            const idx = activePlaylist.songs.findIndex(s => s.id === song.id);
+            return (
+              <SongCard
+                key={song.id}
+                song={song}
+                index={idx}
+                total={activePlaylist.songs.length}
+                isActive={activeSongId === song.id}
+                isEditing={editingSongId === song.id}
+                editForm={editForm}
+                setEditForm={setEditForm}
+                durationInput={durationInput}
+                setDurationInput={setDurationInput}
+                onSelect={() => onSelectSong(song)}
+                onStartEdit={() => startEdit(song)}
+                onSaveEdit={saveEdit}
+                onCancelEdit={() => setEditingSongId(null)}
+                onDelete={() => deleteSong(song.id)}
+                onMove={(dir) => moveSong(song.id, dir)}
+              />
+            );
+          })}
 
           <div className="flex gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={addSong} className="flex-1 text-xs gap-1 h-8">

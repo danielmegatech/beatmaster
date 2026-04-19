@@ -326,15 +326,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
               />
             );
           })}
-
-          <div className="flex gap-2 pt-1">
-            <Button variant="outline" size="sm" onClick={addSong} className="flex-1 text-xs gap-1 h-8">
-              <Plus className="w-3 h-3" /> Adicionar Música
-            </Button>
-            <Button variant="outline" size="sm" onClick={addPause} className="text-xs gap-1 h-8">
-              <Coffee className="w-3 h-3" /> Pausa
-            </Button>
-          </div>
         </div>
       )}
 

@@ -118,6 +118,32 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
         </div>
       )}
 
+      {/* Beat Flash Strip - destaque visual full-width */}
+      <div
+        key={`${currentBeat}-${isPlaying}`}
+        className={cn(
+          'h-12 sm:h-16 rounded-xl border-2 transition-all duration-100 flex items-center justify-center',
+          isPlaying || isCountingIn
+            ? currentBeat === 0
+              ? 'bg-[hsl(15,90%,55%)] border-[hsl(15,90%,65%)] shadow-[0_0_40px_hsl(15,90%,55%/0.7)] scale-[1.02]'
+              : 'bg-foreground/85 border-foreground/60 shadow-[0_0_20px_hsl(var(--foreground)/0.3)]'
+            : 'bg-muted/30 border-border'
+        )}
+      >
+        <span
+          className={cn(
+            'text-2xl sm:text-3xl font-black tabular-nums tracking-tight',
+            (isPlaying || isCountingIn)
+              ? currentBeat === 0
+                ? 'text-white drop-shadow-lg'
+                : 'text-background'
+              : 'text-muted-foreground'
+          )}
+        >
+          {isPlaying || isCountingIn ? currentBeat + 1 : '—'}
+        </span>
+      </div>
+
       {/* BPM Display */}
       <div className="text-center">
         <div className="text-5xl sm:text-6xl font-bold text-foreground tabular-nums">{bpm}</div>

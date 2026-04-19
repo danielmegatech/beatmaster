@@ -94,21 +94,16 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
       {/* Header with play button */}
       <div className="flex items-center justify-between">
         <h2 className="text-base sm:text-lg font-semibold text-primary">🥁 Metrônomo</h2>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={countIn ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setCountIn(!countIn)}
-            className="text-xs h-8 gap-1"
-            title="Count-in: conta o compasso antes de iniciar"
-          >
-            <Timer className="w-3.5 h-3.5" />
-            {countIn ? 'Count ✓' : 'Count'}
-          </Button>
-          <Button onClick={toggle} size="icon" className="rounded-full w-10 h-10 sm:w-12 sm:h-12 glow-purple">
-            {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
-          </Button>
-        </div>
+        <Button
+          variant={countIn ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setCountIn(!countIn)}
+          className="text-xs h-8 gap-1"
+          title="Count-in: conta o compasso antes de iniciar"
+        >
+          <Timer className="w-3.5 h-3.5" />
+          {countIn ? 'Count ✓' : 'Count'}
+        </Button>
       </div>
 
       {/* Count-in indicator */}
@@ -118,31 +113,21 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
         </div>
       )}
 
-      {/* Beat Flash Strip - destaque visual full-width */}
-      <div
-        key={`${currentBeat}-${isPlaying}`}
+      {/* BIG Play/Pause Button - destaque principal */}
+      <Button
+        onClick={toggle}
         className={cn(
-          'h-12 sm:h-16 rounded-xl border-2 transition-all duration-100 flex items-center justify-center',
-          isPlaying || isCountingIn
-            ? currentBeat === 0
-              ? 'bg-[hsl(15,90%,55%)] border-[hsl(15,90%,65%)] shadow-[0_0_40px_hsl(15,90%,55%/0.7)] scale-[1.02]'
-              : 'bg-foreground/85 border-foreground/60 shadow-[0_0_20px_hsl(var(--foreground)/0.3)]'
-            : 'bg-muted/30 border-border'
+          'w-full h-20 rounded-2xl text-lg font-bold gap-3 border-4 transition-all shadow-lg',
+          isPlaying
+            ? 'bg-destructive hover:bg-destructive/90 border-destructive-foreground/30 text-destructive-foreground'
+            : 'bg-primary hover:bg-primary/90 border-primary-foreground/30 text-primary-foreground glow-purple'
         )}
       >
-        <span
-          className={cn(
-            'text-2xl sm:text-3xl font-black tabular-nums tracking-tight',
-            (isPlaying || isCountingIn)
-              ? currentBeat === 0
-                ? 'text-white drop-shadow-lg'
-                : 'text-background'
-              : 'text-muted-foreground'
-          )}
-        >
-          {isPlaying || isCountingIn ? currentBeat + 1 : '—'}
-        </span>
-      </div>
+        {isPlaying
+          ? <Pause className="!w-9 !h-9" strokeWidth={2.5} />
+          : <Play className="!w-9 !h-9" strokeWidth={2.5} />}
+        {isPlaying ? 'PAUSE' : 'START'}
+      </Button>
 
       {/* BPM Display */}
       <div className="text-center">

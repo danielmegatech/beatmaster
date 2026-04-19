@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Trash2, Download, Upload, Search, Clock, Coffee } from 'lucide-react';
+import { Plus, Trash2, Download, Upload, Clock, Coffee } from 'lucide-react';
 import type { Song, Playlist } from '@/types/beatmaster';
 import SongCard from './SongCard';
 

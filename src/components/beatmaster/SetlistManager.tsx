@@ -184,13 +184,71 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     e.target.value = '';
   };
 
+  const addBand = () => {
+    const name = newBandName.trim();
+    if (!name) { setAddingBand(false); return; }
+    const pl: Playlist = { id: crypto.randomUUID(), name: `Setlist 1`, songs: [], band: name };
+    setPlaylists(prev => [...prev, pl]);
+    setSelectedBand(name);
+    setActivePlaylistId(pl.id);
+    setNewBandName('');
+    setAddingBand(false);
+  };
+
   return (
     <div className="glass rounded-2xl p-3 sm:p-5 space-y-3 sm:space-y-4 min-w-0">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h2 className="text-base sm:text-lg font-semibold text-primary">📋 Setlist Manager</h2>
+        <h2 className="text-base sm:text-lg font-semibold text-primary">📋 Setlist</h2>
+        {activePlaylist && totalDuration > 0 && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="w-3 h-3" />{formatDuration(totalDuration)} · {filteredSongs.length} músicas
+          </div>
+        )}
       </div>
 
-      {/* Playlist tabs (filtered by band selected in header) */}
+      {/* Band tabs (horizontal scroll) */}
+      <ScrollArea className="w-full">
+        <div className="flex gap-1.5 items-center pb-2 min-w-max">
+          <Button
+            variant={selectedBand === ALL_BANDS ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedBand(ALL_BANDS)}
+            className="text-xs h-9 px-3 shrink-0"
+          >
+            🎵 Todas
+          </Button>
+          {bands.map(b => (
+            <Button
+              key={b}
+              variant={selectedBand === b ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedBand(b)}
+              className="text-xs h-9 px-3 shrink-0"
+            >
+              {b}
+            </Button>
+          ))}
+          {addingBand ? (
+            <div className="flex gap-1 shrink-0">
+              <Input
+                autoFocus
+                placeholder="Nome banda..."
+                value={newBandName}
+                onChange={e => setNewBandName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addBand(); } if (e.key === 'Escape') setAddingBand(false); }}
+                onBlur={addBand}
+                className="h-9 w-28 text-xs"
+              />
+            </div>
+          ) : (
+            <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => setAddingBand(true)} title="Nova banda">
+              <Plus className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      </ScrollArea>
+
+      {/* Playlist tabs */}
       <ScrollArea className="w-full">
         <div className="flex gap-1.5 sm:gap-2 items-center pb-2 min-w-max">
           {visiblePlaylists.map(pl => (
@@ -199,12 +257,12 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 variant={activePlaylistId === pl.id ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setActivePlaylistId(pl.id)}
-                className="text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3"
+                className="text-xs h-8 px-3"
               >
                 {pl.name}
               </Button>
-              <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={() => deletePlaylist(pl.id)}>
-                <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => deletePlaylist(pl.id)}>
+                <Trash2 className="w-3 h-3" />
               </Button>
             </div>
           ))}
@@ -214,42 +272,33 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
               value={newPlaylistName}
               onChange={e => setNewPlaylistName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPlaylist(); } }}
-              className="h-7 sm:h-8 w-24 sm:w-32 text-xs"
+              className="h-8 w-28 text-xs"
             />
-            <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8" onClick={addPlaylist}><Plus className="w-3 h-3" /></Button>
+            <Button size="icon" variant="outline" className="h-8 w-8" onClick={addPlaylist}><Plus className="w-3 h-3" /></Button>
           </div>
         </div>
       </ScrollArea>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <Button variant="outline" size="sm" onClick={exportXlsx} disabled={playlists.length === 0} className="text-[10px] sm:text-xs gap-1 h-7">
-          <Download className="w-3 h-3" /> Exportar
-        </Button>
-        <label>
-          <Button variant="outline" size="sm" asChild className="text-[10px] sm:text-xs gap-1 cursor-pointer h-7">
-            <span><Upload className="w-3 h-3" /> Importar</span>
+      {/* Action buttons + import/export */}
+      {activePlaylist && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <Button variant="default" size="sm" onClick={addSong} className="text-xs gap-1 h-9 flex-1 min-w-[120px]">
+            <Plus className="w-3.5 h-3.5" /> Música
           </Button>
-          <input type="file" accept=".xlsx,.xls" className="hidden" onChange={importXlsx} />
-        </label>
-        {activePlaylist && (
-          <div className="flex-1 min-w-[120px] relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-            <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Buscar música ou artista..." className="h-7 text-xs pl-7" />
-          </div>
-        )}
-        {activePlaylist && (
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span>{filteredSongs.length} músicas</span>
-            {totalDuration > 0 && (
-              <span className="flex items-center gap-0.5">
-                <Clock className="w-2.5 h-2.5" />{formatDuration(totalDuration)}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+          <Button variant="secondary" size="sm" onClick={addPause} className="text-xs gap-1 h-9">
+            <Coffee className="w-3.5 h-3.5" /> Pausa
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportXlsx} className="text-xs gap-1 h-9">
+            <Download className="w-3.5 h-3.5" /> Exportar
+          </Button>
+          <label>
+            <Button variant="outline" size="sm" asChild className="text-xs gap-1 cursor-pointer h-9">
+              <span><Upload className="w-3.5 h-3.5" /> Importar</span>
+            </Button>
+            <input type="file" accept=".xlsx,.xls" className="hidden" onChange={importXlsx} />
+          </label>
+        </div>
+      )}
 
       {/* Song list with reorder buttons */}
       {activePlaylist && (

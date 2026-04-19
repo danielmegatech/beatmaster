@@ -22,7 +22,8 @@ export type Subdivision = 'quarter' | 'eighth' | 'triplet' | 'sixteenth';
 
 export type SoundTimbre =
   | 'triangle' | 'sine' | 'square' | 'sawtooth'
-  | 'woodblock' | 'cowbell' | 'hihat' | 'rim' | 'clave' | 'click';
+  | 'woodblock' | 'cowbell' | 'hihat' | 'rim' | 'clave' | 'click'
+  | 'bell' | 'bongo' | 'beep';
 
 export type PadMode = 'sampler' | 'loop';
 

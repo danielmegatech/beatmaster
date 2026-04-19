@@ -36,13 +36,19 @@ function parseDuration(str: string): number | undefined {
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   playlists, setPlaylists, activePlaylistId, setActivePlaylistId, activeSongId, onSelectSong,
-  selectedBand,
+  selectedBand, setSelectedBand,
 }) => {
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Song>>({});
   const [newPlaylistName, setNewPlaylistName] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [durationInput, setDurationInput] = useState('');
+  const [addingBand, setAddingBand] = useState(false);
+  const [newBandName, setNewBandName] = useState('');
+
+  const bands = useMemo(() => {
+    const set = new Set(playlists.map(p => p.band || 'Geral'));
+    return Array.from(set).sort();
+  }, [playlists]);
 
   // Filtered playlists by selected band (band selector lives in header)
   const visiblePlaylists = useMemo(() => {
@@ -52,11 +58,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || null;
 
-  const filteredSongs = activePlaylist?.songs.filter(s =>
-    !searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (s.artist || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.notes.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredSongs = activePlaylist?.songs || [];
 
   const totalDuration = activePlaylist?.songs.reduce((acc, s) => acc + (s.duration || 0), 0) || 0;
 

@@ -136,6 +136,53 @@ function playClick(
       osc.stop(time + 0.015);
       break;
     }
+    case 'bell': {
+      // Bell: two sine partials with long decay
+      const f1 = isAccent ? 880 : 660;
+      const f2 = f1 * 2.76;
+      [f1, f2].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(clickVol * (i === 0 ? 0.7 : 0.3), time);
+        g.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
+        osc.connect(g);
+        g.connect(gain);
+        osc.start(time);
+        osc.stop(time + 0.65);
+      });
+      gain.gain.setValueAtTime(1, time);
+      break;
+    }
+    case 'bongo': {
+      // Bongo: pitched membrane (sine + quick decay + body)
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      const baseFreq = isAccent ? 280 : 180;
+      osc.frequency.setValueAtTime(baseFreq * 2, time);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq, time + 0.05);
+      gain.gain.setValueAtTime(clickVol, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+      osc.connect(gain);
+      osc.start(time);
+      osc.stop(time + 0.22);
+      break;
+    }
+    case 'beep': {
+      // Beep: clean sine, electronic
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = isAccent ? 2000 : 1500;
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(clickVol, time + 0.005);
+      gain.gain.setValueAtTime(clickVol, time + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+      osc.connect(gain);
+      osc.start(time);
+      osc.stop(time + 0.1);
+      break;
+    }
   }
 }
 

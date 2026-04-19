@@ -36,11 +36,12 @@ const subdivisions: { value: Subdivision; label: string; short: string }[] = [
   { value: 'triplet', label: '♪♪♪ Triplet', short: '♪³' },
   { value: 'sixteenth', label: '♬♬ 16th', short: '♬♬' },
 ];
-const sounds: SoundTimbre[] = ['click', 'triangle', 'sine', 'square', 'sawtooth', 'woodblock', 'cowbell', 'hihat', 'rim', 'clave'];
+const sounds: SoundTimbre[] = ['clave', 'bell', 'hihat', 'bongo', 'beep', 'woodblock', 'click', 'cowbell', 'rim', 'triangle', 'sine', 'square', 'sawtooth'];
 
 const soundEmojis: Record<SoundTimbre, string> = {
   click: '🔘', triangle: '🔺', sine: '〰️', square: '⬜', sawtooth: '📐',
   woodblock: '🪵', cowbell: '🔔', hihat: '🥁', rim: '🪘', clave: '🥢',
+  bell: '🔔', bongo: '🪘', beep: '🔊',
 };
 
 function NavSelector<T extends string>({ items, value, onChange, label, displayFn }: {

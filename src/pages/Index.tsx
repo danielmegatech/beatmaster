@@ -2,13 +2,14 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useMetronome } from '@/hooks/useMetronome';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useIsMobile } from '@/hooks/use-mobile';
 import Metronome from '@/components/beatmaster/Metronome';
 import SetlistManager from '@/components/beatmaster/SetlistManager';
 import SamplerPad from '@/components/beatmaster/SamplerPad';
 import FooterPlayer from '@/components/beatmaster/FooterPlayer';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sun, Moon, Palette, Users, ListMusic } from 'lucide-react';
+import { Sun, Moon, Palette } from 'lucide-react';
 import { defaultPlaylists } from '@/data/defaultPresets';
 import type { Playlist, Song, AppMode } from '@/types/beatmaster';
 
@@ -26,6 +27,7 @@ const ALL_BANDS = '__all__';
 
 const Index = () => {
   const metro = useMetronome();
+  const isMobile = useIsMobile();
   const [playlists, setPlaylists] = useLocalStorage<Playlist[]>('bm-playlists', []);
   const [activePlaylistId, setActivePlaylistId] = useLocalStorage<string | null>('bm-active-playlist', null);
   const [activeSongId, setActiveSongId] = useLocalStorage<string | null>('bm-active-song', null);
@@ -120,48 +122,15 @@ const Index = () => {
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden">
       <header className="flex items-center justify-between gap-2 py-2 sm:py-3 px-3 sm:px-4 max-w-6xl mx-auto w-full shrink-0">
-        <div className="min-w-0 shrink-0">
+        <div className="min-w-0">
           <h1 className="text-base sm:text-xl md:text-2xl font-bold text-primary truncate">🎵 BeatMaster</h1>
           <p className="hidden sm:block text-[10px] text-muted-foreground mt-0.5 truncate">Metrônomo · Setlist · Sampler</p>
         </div>
 
-        {/* Band + Setlist quick selectors */}
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0 justify-center max-w-md">
-          <div className="flex items-center gap-1 min-w-0 flex-1">
-            <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            <Select value={selectedBand} onValueChange={setSelectedBand}>
-              <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs min-w-0">
-                <SelectValue placeholder="Banda" />
-              </SelectTrigger>
-              <SelectContent className="z-50 bg-popover">
-                <SelectItem value={ALL_BANDS}>🎵 Todas</SelectItem>
-                {Array.from(new Set(playlists.map(p => p.band || 'Geral'))).sort().map(b => (
-                  <SelectItem key={b} value={b}>{b}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1 min-w-0 flex-1">
-            <ListMusic className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            <Select value={activePlaylistId || ''} onValueChange={(v) => setActivePlaylistId(v)}>
-              <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs min-w-0">
-                <SelectValue placeholder="Setlist" />
-              </SelectTrigger>
-              <SelectContent className="z-50 bg-popover">
-                {playlists
-                  .filter(p => selectedBand === ALL_BANDS || (p.band || 'Geral') === selectedBand)
-                  .map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <div className="relative">
-            <Button variant="ghost" size="icon" onClick={() => setShowSkinPicker(!showSkinPicker)} className="h-7 w-7 sm:h-8 sm:w-8">
-              <Palette className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Button variant="ghost" size="icon" onClick={() => setShowSkinPicker(!showSkinPicker)} className="h-9 w-9 sm:h-10 sm:w-10">
+              <Palette className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
             {showSkinPicker && (
               <>
@@ -179,57 +148,81 @@ const Index = () => {
               </>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="h-7 w-7 sm:h-8 sm:w-8">
-            {isDark ? <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+          <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="h-9 w-9 sm:h-10 sm:w-10">
+            {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
           </Button>
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto overflow-x-hidden pb-[88px] sm:pb-[72px] px-2 sm:px-4">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[300px_1fr] xl:grid-cols-[320px_1fr] gap-3 sm:gap-4 min-w-0">
-          <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100dvh-140px)] lg:overflow-y-auto min-w-0">
-            <Metronome
-              isPlaying={metro.isPlaying}
-              bpm={metro.bpm}
-              setBpm={metro.setBpm}
-              timeSignature={metro.timeSignature}
-              setTimeSignature={metro.setTimeSignature}
-              subdivision={metro.subdivision}
-              setSubdivision={metro.setSubdivision}
-              sound={metro.sound}
-              setSound={metro.setSound}
-              volume={metro.volume}
-              setVolume={metro.setVolume}
-              pan={metro.pan}
-              setPan={metro.setPan}
-              currentBeat={metro.currentBeat}
-              beatsPerMeasure={metro.beatsPerMeasure}
-              toggle={metro.toggle}
-              tapTempo={metro.tapTempo}
-              countIn={metro.countIn}
-              setCountIn={metro.setCountIn}
-              isCountingIn={metro.isCountingIn}
-            />
+        {isMobile ? (
+          <Tabs defaultValue="metronome" className="w-full">
+            <TabsList className="grid grid-cols-3 w-full h-12 mb-3 sticky top-0 z-10">
+              <TabsTrigger value="metronome" className="text-sm font-medium">🥁 Metro</TabsTrigger>
+              <TabsTrigger value="setlist" className="text-sm font-medium">📋 Setlist</TabsTrigger>
+              <TabsTrigger value="sampler" className="text-sm font-medium">🎛️ Pads</TabsTrigger>
+            </TabsList>
+            <TabsContent value="metronome" className="mt-0">
+              <Metronome
+                isPlaying={metro.isPlaying} bpm={metro.bpm} setBpm={metro.setBpm}
+                timeSignature={metro.timeSignature} setTimeSignature={metro.setTimeSignature}
+                subdivision={metro.subdivision} setSubdivision={metro.setSubdivision}
+                sound={metro.sound} setSound={metro.setSound}
+                volume={metro.volume} setVolume={metro.setVolume}
+                pan={metro.pan} setPan={metro.setPan}
+                currentBeat={metro.currentBeat} beatsPerMeasure={metro.beatsPerMeasure}
+                toggle={metro.toggle} tapTempo={metro.tapTempo}
+                countIn={metro.countIn} setCountIn={metro.setCountIn}
+                isCountingIn={metro.isCountingIn}
+              />
+            </TabsContent>
+            <TabsContent value="setlist" className="mt-0">
+              <SetlistManager
+                playlists={playlists} setPlaylists={setPlaylists}
+                activePlaylistId={activePlaylistId} setActivePlaylistId={setActivePlaylistId}
+                activeSongId={activeSongId} onSelectSong={onSelectSong}
+                selectedBand={selectedBand} setSelectedBand={setSelectedBand}
+              />
+            </TabsContent>
+            <TabsContent value="sampler" className="mt-0">
+              <SamplerPad
+                getAudioContext={metro.getAudioContext}
+                getMasterGain={metro.getMasterGain}
+                padTrigger={padTrigger}
+              />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[300px_1fr] xl:grid-cols-[320px_1fr] gap-3 sm:gap-4 min-w-0">
+            <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100dvh-140px)] lg:overflow-y-auto min-w-0">
+              <Metronome
+                isPlaying={metro.isPlaying} bpm={metro.bpm} setBpm={metro.setBpm}
+                timeSignature={metro.timeSignature} setTimeSignature={metro.setTimeSignature}
+                subdivision={metro.subdivision} setSubdivision={metro.setSubdivision}
+                sound={metro.sound} setSound={metro.setSound}
+                volume={metro.volume} setVolume={metro.setVolume}
+                pan={metro.pan} setPan={metro.setPan}
+                currentBeat={metro.currentBeat} beatsPerMeasure={metro.beatsPerMeasure}
+                toggle={metro.toggle} tapTempo={metro.tapTempo}
+                countIn={metro.countIn} setCountIn={metro.setCountIn}
+                isCountingIn={metro.isCountingIn}
+              />
+            </div>
+            <div className="space-y-3 sm:space-y-4 min-w-0">
+              <SetlistManager
+                playlists={playlists} setPlaylists={setPlaylists}
+                activePlaylistId={activePlaylistId} setActivePlaylistId={setActivePlaylistId}
+                activeSongId={activeSongId} onSelectSong={onSelectSong}
+                selectedBand={selectedBand} setSelectedBand={setSelectedBand}
+              />
+              <SamplerPad
+                getAudioContext={metro.getAudioContext}
+                getMasterGain={metro.getMasterGain}
+                padTrigger={padTrigger}
+              />
+            </div>
           </div>
-
-          <div className="space-y-3 sm:space-y-4 min-w-0">
-            <SetlistManager
-              playlists={playlists}
-              setPlaylists={setPlaylists}
-              activePlaylistId={activePlaylistId}
-              setActivePlaylistId={setActivePlaylistId}
-              activeSongId={activeSongId}
-              onSelectSong={onSelectSong}
-              selectedBand={selectedBand}
-              setSelectedBand={setSelectedBand}
-            />
-            <SamplerPad
-              getAudioContext={metro.getAudioContext}
-              getMasterGain={metro.getMasterGain}
-              padTrigger={padTrigger}
-            />
-          </div>
-        </div>
+        )}
       </main>
 
       <FooterPlayer

@@ -2,10 +2,10 @@ import * as React from "react";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
-interface ResettableSliderProps extends React.ComponentPropsWithoutRef<typeof Slider> {
+type ResettableSliderProps = Omit<React.ComponentPropsWithoutRef<typeof Slider>, "onReset"> & {
   resetValue: number;
   onReset?: (value: number) => void;
-}
+};
 
 /**
  * Slider that resets to `resetValue` on double-click, with a brief flash feedback.

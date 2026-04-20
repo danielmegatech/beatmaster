@@ -347,7 +347,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
           )}
           <div className="flex items-center gap-1 shrink-0">
             <Volume2 className="w-3 h-3 text-muted-foreground" />
-            <Slider value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} className="w-16" />
+            <ResettableSlider resetValue={1} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} className="w-16" />
           </div>
         </div>
       </div>

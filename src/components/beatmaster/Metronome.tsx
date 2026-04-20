@@ -1,5 +1,6 @@
 import React from 'react';
 import { Slider } from '@/components/ui/slider';
+import { ResettableSlider } from '@/components/ui/resettable-slider';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Minus, Plus, Hand, ChevronLeft, ChevronRight, Timer } from 'lucide-react';
 import BeatIndicator from './BeatIndicator';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
+import { ResettableSlider } from '@/components/ui/resettable-slider';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Mic, MicOff } from 'lucide-react';
 import BeatIndicator from './BeatIndicator';
 import type { Song, AppMode } from '@/types/beatmaster';

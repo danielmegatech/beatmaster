@@ -166,7 +166,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
     // If already playing and song changed (prev/next during playback), announce now
     if (
       isPlaying && activeSong && ttsEnabled && mode === 'setlist' &&
-      announcedSongRef.current !== activeSong.id && !activeSong.isPause
+      announcedSongRef.current !== activeSong.id
     ) {
       announcedSongRef.current = activeSong.id;
       announceSong(activeSong);

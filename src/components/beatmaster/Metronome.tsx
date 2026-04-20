@@ -120,7 +120,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
           variant={countIn ? 'default' : 'outline'}
           size="sm"
           onClick={() => setCountIn(!countIn)}
-          className="text-xs h-8 gap-1"
+          className={cn("text-xs h-8 gap-1 transition-all", countIn && "pulse-active")}
           title="Count-in: conta o compasso antes de iniciar"
         >
           <Timer className="w-3.5 h-3.5" />
@@ -141,7 +141,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
         className={cn(
           'w-full h-20 rounded-2xl text-lg font-bold gap-3 border-4 transition-all shadow-lg',
           isPlaying
-            ? 'bg-destructive hover:bg-destructive/90 border-destructive-foreground/30 text-destructive-foreground'
+            ? 'bg-destructive hover:bg-destructive/90 border-destructive-foreground/30 text-destructive-foreground pulse-active'
             : 'bg-primary hover:bg-primary/90 border-primary-foreground/30 text-primary-foreground glow-purple'
         )}
       >
@@ -164,7 +164,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
           <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setBpm(Math.max(40, bpm - 1))}>
             <Minus className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="outline" onClick={tapTempo} className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm px-3 sm:px-4">
+          <Button variant="outline" onClick={tapTempo} className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm px-3 sm:px-4 active:pulse-active">
             <Hand className="w-3.5 h-3.5" /> Tap
           </Button>
           <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setBpm(Math.min(240, bpm + 1))}>

@@ -29,7 +29,7 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     defaultPadConfigs.map(({ audioBuffer, ...rest }) => rest)
   );
   const [buffers, setBuffers] = useState<Record<number, AudioBuffer>>({});
-  const [loopProgress, setLoopProgress] = useState<Record<number, number>>({});
+  const [activePads, setActivePads] = useState<Record<number, boolean>>({});
   const [configPadId, setConfigPadId] = useState<number | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [editName, setEditName] = useState('');
@@ -85,6 +85,10 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     source.connect(gain);
     source.start();
     activeSourcesRef.current[padId] = { source, gain };
+    setActivePads(prev => ({ ...prev, [padId]: true }));
+    source.onended = () => {
+      setActivePads(prev => { const n = { ...prev }; delete n[padId]; return n; });
+    };
   }, [buffers, padConfigs, getAudioContext, getMasterGain]);
 
   const stopSampler = useCallback((padId: number) => {
@@ -97,6 +101,7 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
         try { active.source.stop(); } catch {}
       }, 60);
       delete activeSourcesRef.current[padId];
+      setActivePads(prev => { const n = { ...prev }; delete n[padId]; return n; });
     }
   }, [getAudioContext]);
 
@@ -137,12 +142,12 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
   const stopAll = () => {
     Object.keys(loopSourcesRef.current).forEach(k => {
       const id = Number(k);
-      loopSourcesRef.current[id].source.stop();
+      try { loopSourcesRef.current[id].source.stop(); } catch {}
       clearInterval(loopSourcesRef.current[id].interval);
       delete loopSourcesRef.current[id];
     });
     Object.keys(activeSourcesRef.current).forEach(k => stopSampler(Number(k)));
-    setLoopProgress({});
+    setActivePads({});
   };
 
   // Toggle: press once = play, press again = stop (sample mode for all)
@@ -201,7 +206,7 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
       {/* 5 Pads - responsive grid with max size */}
       <div className="flex justify-center gap-1.5 sm:gap-2">
         {padConfigs.map((pad, i) => {
-          const isActive = !!activeSourcesRef.current[pad.id];
+          const isActive = !!activePads[pad.id];
           return (
             <div key={pad.id} className="relative flex flex-col items-center gap-0.5 sm:gap-1 w-16 sm:w-20 md:w-24 max-w-[100px]">
               <button

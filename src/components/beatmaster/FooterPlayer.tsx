@@ -97,13 +97,15 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
     });
   }, []);
 
-  // TTS announcement (always English, "Now playing: ...")
+  // TTS announcement (always English, "Now playing: ..." or "Pause for X seconds")
   const announceSong = useCallback(async (song: Song): Promise<void> => {
     stopAnnouncement();
     setAnnouncing(true);
-    const text = song.artist
-      ? `Now playing: ${song.name}, by ${song.artist}.`
-      : `Now playing: ${song.name}.`;
+    const text = song.isPause
+      ? `Pause for ${song.duration ?? 300} seconds.`
+      : song.artist
+        ? `Now playing: ${song.name}, by ${song.artist}.`
+        : `Now playing: ${song.name}.`;
     try {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
       const response = await fetch(url, {

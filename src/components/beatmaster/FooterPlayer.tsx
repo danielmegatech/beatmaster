@@ -419,7 +419,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
 
           <div className="flex items-center gap-2 w-24 md:w-28">
             <Volume2 className="w-4 h-4 text-muted-foreground shrink-0" />
-            <Slider value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} />
+            <ResettableSlider resetValue={1} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} />
           </div>
 
           {/* Count-in + TTS toggle */}

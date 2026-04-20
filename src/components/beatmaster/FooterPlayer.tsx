@@ -183,7 +183,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
     }
     // Announce first when in setlist mode with TTS, then start
     if (
-      activeSong && ttsEnabled && mode === 'setlist' && !activeSong.isPause &&
+      activeSong && ttsEnabled && mode === 'setlist' &&
       announcedSongRef.current !== activeSong.id
     ) {
       announcedSongRef.current = activeSong.id;

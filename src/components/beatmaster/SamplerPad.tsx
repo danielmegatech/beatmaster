@@ -105,39 +105,7 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     }
   }, [getAudioContext]);
 
-  const toggleLoop = useCallback((padId: number) => {
-    if (loopSourcesRef.current[padId]) {
-      loopSourcesRef.current[padId].source.stop();
-      clearInterval(loopSourcesRef.current[padId].interval);
-      delete loopSourcesRef.current[padId];
-      setLoopProgress(prev => { const n = { ...prev }; delete n[padId]; return n; });
-      return;
-    }
-    const buffer = buffers[padId];
-    if (!buffer) return;
-    const pad = padConfigs.find(p => p.id === padId);
-    if (!pad) return;
-    const ctx = getAudioContext();
-    const mg = getMasterGain();
-    const gain = ctx.createGain();
-    gain.gain.value = pad.volume;
-    const panner = ctx.createStereoPanner();
-    panner.pan.value = pad.pan;
-    gain.connect(panner);
-    panner.connect(mg);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
-    source.connect(gain);
-    source.start();
-    const startTime = ctx.currentTime;
-    const dur = buffer.duration;
-    const interval = window.setInterval(() => {
-      const elapsed = (ctx.currentTime - startTime) % dur;
-      setLoopProgress(prev => ({ ...prev, [padId]: elapsed / dur }));
-    }, 50);
-    loopSourcesRef.current[padId] = { source, interval };
-  }, [buffers, padConfigs, getAudioContext, getMasterGain]);
+  // Loop mode removed — pads operate solely as toggle samplers (press = play, press again = stop).
 
   const stopAll = () => {
     Object.keys(loopSourcesRef.current).forEach(k => {

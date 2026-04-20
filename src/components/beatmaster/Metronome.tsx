@@ -1,5 +1,6 @@
 import React from 'react';
 import { Slider } from '@/components/ui/slider';
+import { ResettableSlider } from '@/components/ui/resettable-slider';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Minus, Plus, Hand, ChevronLeft, ChevronRight, Timer } from 'lucide-react';
 import BeatIndicator from './BeatIndicator';
@@ -214,14 +215,14 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <div>
           <label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Volume</label>
-          <Slider value={[volume]} onValueChange={([v]) => setVolume(v)} min={0} max={1} step={0.01} />
+          <ResettableSlider resetValue={1} value={[volume]} onValueChange={([v]) => setVolume(v)} min={0} max={1} step={0.01} />
         </div>
         <div>
           <label className="text-[10px] sm:text-xs text-muted-foreground mb-1 flex items-center justify-between">
             <span>Pan</span>
             <span className="text-[9px] sm:text-[10px]">{panLabel(pan)}</span>
           </label>
-          <Slider value={[pan]} onValueChange={([v]) => setPan(v)} min={-1} max={1} step={0.01} />
+          <ResettableSlider resetValue={0} value={[pan]} onValueChange={([v]) => setPan(v)} min={-1} max={1} step={0.01} />
         </div>
       </div>
     </div>

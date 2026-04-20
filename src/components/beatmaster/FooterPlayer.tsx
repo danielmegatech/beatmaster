@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
+import { ResettableSlider } from '@/components/ui/resettable-slider';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Mic, MicOff } from 'lucide-react';
 import BeatIndicator from './BeatIndicator';
 import type { Song, AppMode } from '@/types/beatmaster';
@@ -97,13 +97,15 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
     });
   }, []);
 
-  // TTS announcement (always English, "Now playing: ...")
+  // TTS announcement (always English, "Now playing: ..." or "Pause for X seconds")
   const announceSong = useCallback(async (song: Song): Promise<void> => {
     stopAnnouncement();
     setAnnouncing(true);
-    const text = song.artist
-      ? `Now playing: ${song.name}, by ${song.artist}.`
-      : `Now playing: ${song.name}.`;
+    const text = song.isPause
+      ? `Pause for ${song.duration ?? 300} seconds.`
+      : song.artist
+        ? `Now playing: ${song.name}, by ${song.artist}.`
+        : `Now playing: ${song.name}.`;
     try {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
       const response = await fetch(url, {
@@ -164,7 +166,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
     // If already playing and song changed (prev/next during playback), announce now
     if (
       isPlaying && activeSong && ttsEnabled && mode === 'setlist' &&
-      announcedSongRef.current !== activeSong.id && !activeSong.isPause
+      announcedSongRef.current !== activeSong.id
     ) {
       announcedSongRef.current = activeSong.id;
       announceSong(activeSong);
@@ -181,7 +183,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
     }
     // Announce first when in setlist mode with TTS, then start
     if (
-      activeSong && ttsEnabled && mode === 'setlist' && !activeSong.isPause &&
+      activeSong && ttsEnabled && mode === 'setlist' &&
       announcedSongRef.current !== activeSong.id
     ) {
       announcedSongRef.current = activeSong.id;
@@ -345,7 +347,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
           )}
           <div className="flex items-center gap-1 shrink-0">
             <Volume2 className="w-3 h-3 text-muted-foreground" />
-            <Slider value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} className="w-16" />
+            <ResettableSlider resetValue={1} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} className="w-16" />
           </div>
         </div>
       </div>
@@ -417,7 +419,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
 
           <div className="flex items-center gap-2 w-24 md:w-28">
             <Volume2 className="w-4 h-4 text-muted-foreground shrink-0" />
-            <Slider value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} />
+            <ResettableSlider resetValue={1} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} />
           </div>
 
           {/* Count-in + TTS toggle */}

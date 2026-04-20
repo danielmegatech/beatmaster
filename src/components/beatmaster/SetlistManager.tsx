@@ -98,7 +98,11 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       id: crypto.randomUUID(), name: '☕ INTERVALO', bpm: 0, timeSignature: '4/4',
       notes: 'Pausa de 5 minutos', isPause: true, duration: 300,
     };
-    updateSongs([...activePlaylist.songs, pause]);
+    const songs = [...activePlaylist.songs];
+    const idx = activeSongId ? songs.findIndex(s => s.id === activeSongId) : -1;
+    if (idx >= 0) songs.splice(idx + 1, 0, pause);
+    else songs.push(pause);
+    updateSongs(songs);
   };
 
   const deleteSong = (id: string) => {

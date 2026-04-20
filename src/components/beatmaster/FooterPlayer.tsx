@@ -295,13 +295,24 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
       <div className="sm:hidden px-3 py-2 space-y-1.5 relative z-10">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onPrev} disabled={mode === 'free'}>
+            <Button
+              variant="ghost" size="icon"
+              className={cn("h-7 w-7 active:pulse-active", isPlaying && mode === 'setlist' && "pulse-active")}
+              onClick={onPrev} disabled={mode === 'free'}
+            >
               <SkipBack className="w-3.5 h-3.5" />
             </Button>
-            <Button onClick={handlePlayClick} size="icon" className="rounded-full h-9 w-9 glow-purple">
+            <Button
+              onClick={handlePlayClick} size="icon"
+              className={cn("rounded-full h-9 w-9 glow-purple", isPlaying && "pulse-active")}
+            >
               {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onNext} disabled={mode === 'free'}>
+            <Button
+              variant="ghost" size="icon"
+              className={cn("h-7 w-7 active:pulse-active", isPlaying && mode === 'setlist' && "pulse-active")}
+              onClick={onNext} disabled={mode === 'free'}
+            >
               <SkipForward className="w-3.5 h-3.5" />
             </Button>
           </div>
@@ -311,7 +322,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             <Button variant="outline" size="sm"
               onClick={() => setMode(mode === 'free' ? 'setlist' : 'free')}
               className={cn('text-[10px] h-6 px-2', mode === 'setlist' && 'border-primary text-primary')}>
-              {mode === 'free' ? 'Livre' : 'Set'}
+              {mode === 'free' ? 'BPM Livre' : 'Modo Setlist'}
             </Button>
           </div>
         </div>
@@ -323,7 +334,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             <div className="text-[10px] font-medium truncate">
               {announcing && <span className="text-primary font-bold mr-1 animate-pulse">🎤</span>}
               {phase === 'count-in' && <span className="text-accent font-bold mr-1 animate-pulse">⏳ IN</span>}
-              {activeSong ? activeSong.name : 'Modo Livre'}
+              {activeSong ? activeSong.name : 'BPM Livre'}
             </div>
             {activeSong?.artist && <div className="text-[9px] text-muted-foreground truncate">{activeSong.artist}</div>}
           </div>
@@ -371,19 +382,30 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
                   )}
                 </>
               ) : (
-                <div className="text-xs text-muted-foreground">Modo Livre</div>
+                <div className="text-xs text-muted-foreground">BPM Livre</div>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8" onClick={onPrev} disabled={mode === 'free'}>
+            <Button
+              variant="ghost" size="icon"
+              className={cn("h-7 w-7 md:h-8 md:w-8 active:pulse-active", isPlaying && mode === 'setlist' && "pulse-active")}
+              onClick={onPrev} disabled={mode === 'free'}
+            >
               <SkipBack className="w-3.5 h-3.5" />
             </Button>
-            <Button onClick={handlePlayClick} size="icon" className="rounded-full h-10 w-10 md:h-11 md:w-11 glow-purple">
+            <Button
+              onClick={handlePlayClick} size="icon"
+              className={cn("rounded-full h-10 w-10 md:h-11 md:w-11 glow-purple", isPlaying && "pulse-active")}
+            >
               {isPlaying ? <Pause className="w-4 h-4 md:w-5 md:h-5" /> : <Play className="w-4 h-4 md:w-5 md:h-5" />}
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8" onClick={onNext} disabled={mode === 'free'}>
+            <Button
+              variant="ghost" size="icon"
+              className={cn("h-7 w-7 md:h-8 md:w-8 active:pulse-active", isPlaying && mode === 'setlist' && "pulse-active")}
+              onClick={onNext} disabled={mode === 'free'}
+            >
               <SkipForward className="w-3.5 h-3.5" />
             </Button>
           </div>
@@ -404,7 +426,10 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
               variant={countIn ? 'default' : 'outline'}
               size="sm"
               onClick={() => setCountIn(!countIn)}
-              className="text-[10px] h-7 gap-1 px-2"
+              className={cn(
+                "text-[10px] h-7 gap-1 px-2 transition-all",
+                countIn && "pulse-active"
+              )}
               title="Count-in: 2 compassos antes de iniciar"
             >
               <Timer className="w-3 h-3" /> Count In
@@ -415,7 +440,8 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
               onClick={() => setTtsEnabled(!ttsEnabled)}
               className={cn(
                 "text-[10px] h-7 gap-1 px-2 transition-all",
-                announcing && "border-primary bg-primary/20 animate-pulse"
+                ttsEnabled && "pulse-active",
+                announcing && "border-primary bg-primary/20"
               )}
               title={ttsEnabled ? "Anúncio por voz ativado (toca antes de cada música)" : "Anúncio por voz desativado"}
             >
@@ -440,7 +466,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             onClick={() => setMode(mode === 'free' ? 'setlist' : 'free')}
             className={cn('text-xs whitespace-nowrap h-7 md:h-8',
               mode === 'setlist' && 'border-primary text-primary')}>
-            {mode === 'free' ? 'Livre' : 'Setlist'}
+            {mode === 'free' ? 'BPM Livre' : 'Modo Setlist'}
           </Button>
         </div>
       </div>

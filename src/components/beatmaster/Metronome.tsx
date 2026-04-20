@@ -44,12 +44,13 @@ const soundEmojis: Record<SoundTimbre, string> = {
   bell: '🔔', bongo: '🪘', beep: '🔊',
 };
 
-function NavSelector<T extends string>({ items, value, onChange, label, displayFn }: {
+function NavSelector<T extends string>({ items, value, onChange, label, displayFn, accent }: {
   items: T[];
   value: T;
   onChange: (v: T) => void;
   label: string;
   displayFn?: (v: T) => string;
+  accent?: boolean;
 }) {
   const idx = items.indexOf(value);
   const prev = () => onChange(items[(idx - 1 + items.length) % items.length]);
@@ -57,16 +58,37 @@ function NavSelector<T extends string>({ items, value, onChange, label, displayF
   const display = displayFn ? displayFn(value) : value;
   return (
     <div className="space-y-1 min-w-0">
-      <label className="text-xs sm:text-sm text-muted-foreground block text-center truncate font-medium">{label}</label>
+      <label className="text-[10px] sm:text-xs text-muted-foreground block text-center truncate font-medium uppercase tracking-wide">{label}</label>
       <div className="flex items-center gap-1 min-w-0">
-        <Button variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-lg" onClick={prev} aria-label={`${label} anterior`}>
-          <ChevronLeft className="w-5 h-5" />
+        <Button
+          variant="outline"
+          size="icon"
+          className={cn(
+            "h-8 w-8 shrink-0 rounded-md active:pulse-active",
+            accent && "border-primary/60 text-primary hover:bg-primary/10"
+          )}
+          onClick={prev}
+          aria-label={`${label} anterior`}
+        >
+          <ChevronLeft className="w-4 h-4" />
         </Button>
-        <div className="flex-1 min-w-0 text-center font-semibold text-sm sm:text-base bg-secondary/50 rounded-lg py-2.5 px-1 truncate border border-border/50">
+        <div className={cn(
+          "flex-1 min-w-0 text-center font-semibold text-sm sm:text-base bg-secondary/50 rounded-md py-2 px-1 truncate border",
+          accent ? "border-primary/40 text-foreground" : "border-border/50"
+        )}>
           {display}
         </div>
-        <Button variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-lg" onClick={next} aria-label={`${label} próximo`}>
-          <ChevronRight className="w-5 h-5" />
+        <Button
+          variant="outline"
+          size="icon"
+          className={cn(
+            "h-8 w-8 shrink-0 rounded-md active:pulse-active",
+            accent && "border-primary/60 text-primary hover:bg-primary/10"
+          )}
+          onClick={next}
+          aria-label={`${label} próximo`}
+        >
+          <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
     </div>
@@ -98,7 +120,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
           variant={countIn ? 'default' : 'outline'}
           size="sm"
           onClick={() => setCountIn(!countIn)}
-          className="text-xs h-8 gap-1"
+          className={cn("text-xs h-8 gap-1 transition-all", countIn && "pulse-active")}
           title="Count-in: conta o compasso antes de iniciar"
         >
           <Timer className="w-3.5 h-3.5" />
@@ -119,7 +141,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
         className={cn(
           'w-full h-20 rounded-2xl text-lg font-bold gap-3 border-4 transition-all shadow-lg',
           isPlaying
-            ? 'bg-destructive hover:bg-destructive/90 border-destructive-foreground/30 text-destructive-foreground'
+            ? 'bg-destructive hover:bg-destructive/90 border-destructive-foreground/30 text-destructive-foreground pulse-active'
             : 'bg-primary hover:bg-primary/90 border-primary-foreground/30 text-primary-foreground glow-purple'
         )}
       >
@@ -142,7 +164,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
           <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setBpm(Math.max(40, bpm - 1))}>
             <Minus className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="outline" onClick={tapTempo} className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm px-3 sm:px-4">
+          <Button variant="outline" onClick={tapTempo} className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm px-3 sm:px-4 active:pulse-active">
             <Hand className="w-3.5 h-3.5" /> Tap
           </Button>
           <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setBpm(Math.min(240, bpm + 1))}>
@@ -166,22 +188,24 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
         />
         <div className="grid grid-cols-2 gap-2 min-w-0">
           <div className="min-w-0">
-            <NavSelector
-              items={subdivisions.map(s => s.value)}
-              value={subdivision}
-              onChange={setSubdivision}
-              label="Subdivisão"
-              displayFn={(v) => subdivisions.find(s => s.value === v)?.short || v}
-            />
+          <NavSelector
+            items={subdivisions.map(s => s.value)}
+            value={subdivision}
+            onChange={setSubdivision}
+            label="Subdivisão"
+            accent
+            displayFn={(v) => subdivisions.find(s => s.value === v)?.short || v}
+          />
           </div>
           <div className="min-w-0">
-            <NavSelector
-              items={sounds}
-              value={sound}
-              onChange={setSound}
-              label="Timbre"
-              displayFn={(v) => `${soundEmojis[v] || ''} ${v.charAt(0).toUpperCase() + v.slice(1)}`}
-            />
+          <NavSelector
+            items={sounds}
+            value={sound}
+            onChange={setSound}
+            label="Timbre"
+            accent
+            displayFn={(v) => `${soundEmojis[v] || ''} ${v.charAt(0).toUpperCase() + v.slice(1)}`}
+          />
           </div>
         </div>
       </div>

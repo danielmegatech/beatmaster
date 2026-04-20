@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Square, Volume2, Settings, Upload, Link, ToggleLeft, ToggleRight, ChevronDown, ChevronUp } from 'lucide-react';
-import type { PadConfig, PadMode } from '@/types/beatmaster';
+import { Square, Volume2, Settings, Upload, Link, ChevronDown, ChevronUp } from 'lucide-react';
+import type { PadConfig } from '@/types/beatmaster';
 import { defaultPadConfigs } from '@/data/defaultPresets';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { cn } from '@/lib/utils';
@@ -145,28 +145,23 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     setLoopProgress({});
   };
 
-  // Handle keyboard triggers
+  // Toggle: press once = play, press again = stop (sample mode for all)
+  const togglePad = useCallback((padId: number) => {
+    if (activeSourcesRef.current[padId]) {
+      stopSampler(padId);
+    } else {
+      playSampler(padId);
+    }
+  }, [playSampler, stopSampler]);
+
+  // Handle keyboard triggers (only on key down -> toggle)
   useEffect(() => {
     if (!padTrigger) return;
-    const pad = padConfigs.find(p => p.id === padTrigger.padId);
-    if (!pad) return;
-    if (pad.mode === 'sampler') {
-      if (padTrigger.type === 'down') playSampler(padTrigger.padId);
-      else stopSampler(padTrigger.padId);
-    } else {
-      if (padTrigger.type === 'down') toggleLoop(padTrigger.padId);
-    }
-  }, [padTrigger]);
+    if (padTrigger.type === 'down') togglePad(padTrigger.padId);
+  }, [padTrigger]); // eslint-disable-line
 
-  const handlePadInteraction = (padId: number, type: 'down' | 'up') => {
-    const pad = padConfigs.find(p => p.id === padId);
-    if (!pad) return;
-    if (pad.mode === 'sampler') {
-      if (type === 'down') playSampler(padId);
-      else stopSampler(padId);
-    } else {
-      if (type === 'down') toggleLoop(padId);
-    }
+  const handlePadClick = (padId: number) => {
+    togglePad(padId);
   };
 
   const openConfig = (padId: number) => {
@@ -192,12 +187,6 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     setConfigPadId(null);
   };
 
-  const togglePadMode = (padId: number) => {
-    setPadConfigs(prev => prev.map(p =>
-      p.id === padId ? { ...p, mode: (p.mode === 'sampler' ? 'loop' : 'sampler') as PadMode } : p
-    ));
-  };
-
   const configPad = configPadId !== null ? padConfigs.find(p => p.id === configPadId) : null;
 
   return (
@@ -211,39 +200,31 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
 
       {/* 5 Pads - responsive grid with max size */}
       <div className="flex justify-center gap-1.5 sm:gap-2">
-        {padConfigs.map((pad, i) => (
-          <div key={pad.id} className="relative flex flex-col items-center gap-0.5 sm:gap-1 w-16 sm:w-20 md:w-24 max-w-[100px]">
-            <button
-              onMouseDown={() => handlePadInteraction(pad.id, 'down')}
-              onMouseUp={() => handlePadInteraction(pad.id, 'up')}
-              onMouseLeave={() => { if (pad.mode === 'sampler') stopSampler(pad.id); }}
-              onTouchStart={(e) => { e.preventDefault(); handlePadInteraction(pad.id, 'down'); }}
-              onTouchEnd={(e) => { e.preventDefault(); handlePadInteraction(pad.id, 'up'); }}
-              className={cn(
-                `w-full aspect-square bg-gradient-to-b border rounded-lg sm:rounded-xl flex flex-col items-center justify-center font-bold transition-all active:scale-95 active:brightness-125`,
-                'text-[10px] sm:text-xs',
-                padColors[i],
-                !buffers[pad.id] && 'opacity-40'
-              )}
-            >
-              <span className="truncate w-full px-0.5 sm:px-1">{pad.fileName || pad.name}</span>
-              <span className="text-[8px] sm:text-[9px] text-muted-foreground mt-0.5">
-                {pad.mode === 'sampler' ? 'HOLD' : 'LOOP'}
-              </span>
-              <span className="text-[8px] sm:text-[9px] text-muted-foreground opacity-60">[{i + 1}]</span>
-            </button>
-            {/* Loop progress */}
-            {loopProgress[pad.id] !== undefined && (
-              <div className="absolute bottom-6 sm:bottom-8 left-0 right-0 h-1 bg-muted rounded overflow-hidden mx-0.5 sm:mx-1">
-                <div className="h-full bg-primary transition-all" style={{ width: `${(loopProgress[pad.id] || 0) * 100}%` }} />
-              </div>
-            )}
-            {/* Settings icon */}
-            <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={() => openConfig(pad.id)}>
-              <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-            </Button>
-          </div>
-        ))}
+        {padConfigs.map((pad, i) => {
+          const isActive = !!activeSourcesRef.current[pad.id];
+          return (
+            <div key={pad.id} className="relative flex flex-col items-center gap-0.5 sm:gap-1 w-16 sm:w-20 md:w-24 max-w-[100px]">
+              <button
+                onClick={() => handlePadClick(pad.id)}
+                onTouchStart={(e) => { e.preventDefault(); handlePadClick(pad.id); }}
+                className={cn(
+                  `w-full aspect-square bg-gradient-to-b border rounded-lg sm:rounded-xl flex flex-col items-center justify-center font-bold transition-all active:scale-95 active:brightness-125`,
+                  'text-[10px] sm:text-xs',
+                  padColors[i],
+                  !buffers[pad.id] && 'opacity-40',
+                  isActive && 'pulse-active brightness-125 ring-2 ring-primary'
+                )}
+              >
+                <span className="truncate w-full px-0.5 sm:px-1">{pad.fileName || pad.name}</span>
+                <span className="text-[8px] sm:text-[9px] text-muted-foreground opacity-60 mt-0.5">[{i + 1}]</span>
+              </button>
+              {/* Settings icon */}
+              <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={() => openConfig(pad.id)}>
+                <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+              </Button>
+            </div>
+          );
+        })}
       </div>
 
       {/* Collapsible Mixer */}
@@ -262,15 +243,6 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
             {padConfigs.map((pad) => (
               <div key={pad.id} className="flex items-center gap-1.5 sm:gap-2 text-xs">
                 <span className="w-12 sm:w-14 text-muted-foreground truncate text-[10px] sm:text-xs">{pad.name}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-5 px-1 shrink-0"
-                  onClick={() => togglePadMode(pad.id)}
-                  title={pad.mode === 'sampler' ? 'Sampler (Hold)' : 'Loop'}
-                >
-                  {pad.mode === 'sampler' ? <ToggleLeft className="w-3 h-3" /> : <ToggleRight className="w-3 h-3 text-primary" />}
-                </Button>
                 <Volume2 className="w-3 h-3 text-muted-foreground shrink-0" />
                 <Slider
                   value={[pad.volume]}

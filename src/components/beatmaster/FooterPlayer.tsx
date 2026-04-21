@@ -323,8 +323,13 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             <span className="text-sm tabular-nums font-semibold">{bpm}</span>
             <Button variant="outline" size="sm"
               onClick={() => setMode(mode === 'free' ? 'setlist' : 'free')}
-              className={cn('text-[10px] h-6 px-2', mode === 'setlist' && 'border-primary text-primary')}>
-              {mode === 'free' ? 'BPM Livre' : 'Modo Setlist'}
+              className={cn(
+                'text-[10px] h-6 px-2 gap-1 transition-all',
+                mode === 'setlist' ? 'border-primary text-primary bg-primary/10' : 'border-accent/40 text-accent'
+              )}>
+              <span className={cn('inline-block w-1.5 h-1.5 rounded-full',
+                mode === 'setlist' ? 'bg-primary animate-pulse' : 'bg-accent')} />
+              {mode === 'free' ? 'BPM Livre' : 'Setlist'}
             </Button>
           </div>
         </div>
@@ -347,7 +352,8 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
           )}
           <div className="flex items-center gap-1 shrink-0">
             <Volume2 className="w-3 h-3 text-muted-foreground" />
-            <ResettableSlider resetValue={1} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} className="w-16" />
+            <ResettableSlider resetValue={0.8} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} className="w-12" />
+            <span className="text-[9px] tabular-nums text-foreground/80 w-7 text-right">{Math.round(masterVolume * 100)}%</span>
           </div>
         </div>
       </div>
@@ -417,9 +423,19 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             <span className="text-sm tabular-nums font-semibold text-foreground">{bpm}</span>
           </div>
 
-          <div className="flex items-center gap-2 w-24 md:w-28">
+          <div className="flex items-center gap-2 w-32 md:w-36">
             <Volume2 className="w-4 h-4 text-muted-foreground shrink-0" />
-            <ResettableSlider resetValue={1} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} />
+            <ResettableSlider resetValue={0.8} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} />
+            <span className="text-[10px] tabular-nums text-foreground/80 w-9 text-right shrink-0">{Math.round(masterVolume * 100)}%</span>
+          </div>
+
+          {/* Pan slider (replaces L/C/R buttons) — double-click to center */}
+          <div className="hidden lg:flex items-center gap-2 w-28">
+            <span className="text-[10px] text-muted-foreground shrink-0">Pan</span>
+            <ResettableSlider resetValue={0} value={[pan]} onValueChange={([v]) => setPan(v)} min={-1} max={1} step={0.01} />
+            <span className="text-[10px] tabular-nums text-foreground/80 w-10 text-right shrink-0">
+              {Math.abs(pan) < 0.05 ? 'C' : `${pan < 0 ? 'L' : 'R'}${Math.round(Math.abs(pan) * 100)}`}
+            </span>
           </div>
 
           {/* Count-in + TTS toggle */}
@@ -452,23 +468,18 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             </Button>
           </div>
 
-          {/* Pan */}
-          <div className="hidden lg:flex items-center gap-1">
-            {[{ label: 'L', val: -1 }, { label: 'C', val: 0 }, { label: 'R', val: 1 }].map(({ label, val }) => (
-              <Button key={label}
-                variant={Math.abs(pan - val) < 0.1 ? 'default' : 'outline'}
-                size="sm" className="h-7 w-7 text-xs p-0"
-                onClick={() => setPan(val)}>
-                {label}
-              </Button>
-            ))}
-          </div>
-
+          {/* Mode toggle with badge */}
           <Button variant="outline" size="sm"
             onClick={() => setMode(mode === 'free' ? 'setlist' : 'free')}
-            className={cn('text-xs whitespace-nowrap h-7 md:h-8',
-              mode === 'setlist' && 'border-primary text-primary')}>
-            {mode === 'free' ? 'BPM Livre' : 'Modo Setlist'}
+            className={cn(
+              'text-xs whitespace-nowrap h-7 md:h-8 gap-1.5 transition-all',
+              mode === 'setlist' ? 'border-primary text-primary bg-primary/10' : 'border-accent/40 text-accent bg-accent/5'
+            )}
+            title="Clique para alternar entre BPM Livre e Modo Setlist">
+            <span className={cn('inline-block w-2 h-2 rounded-full',
+              mode === 'setlist' ? 'bg-primary animate-pulse' : 'bg-accent')} />
+            <span className="hidden md:inline text-muted-foreground">Modo:</span>
+            <span className="font-semibold">{mode === 'free' ? 'BPM Livre' : 'Modo Setlist'}</span>
           </Button>
         </div>
       </div>

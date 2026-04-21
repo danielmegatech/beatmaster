@@ -59,19 +59,19 @@ function NavSelector<T extends string>({ items, value, onChange, label, displayF
   const display = displayFn ? displayFn(value) : value;
   return (
     <div className="space-y-1 min-w-0">
-      <label className="text-[10px] sm:text-xs text-muted-foreground block text-center truncate font-medium uppercase tracking-wide">{label}</label>
+      <label className="block text-center truncate font-medium uppercase tracking-wide text-muted-foreground" style={{ fontSize: '12px' }}>{label}</label>
       <div className="flex items-center gap-1 min-w-0">
         <Button
           variant="outline"
           size="icon"
           className={cn(
-            "h-8 w-8 shrink-0 rounded-md active:pulse-active",
+            "h-7 w-6 shrink-0 rounded-md active:pulse-active",
             accent && "border-primary/60 text-primary hover:bg-primary/10"
           )}
           onClick={prev}
           aria-label={`${label} anterior`}
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-3.5 h-3.5" />
         </Button>
         <div className={cn(
           "flex-1 min-w-0 text-center font-semibold text-sm sm:text-base bg-secondary/50 rounded-md py-2 px-1 truncate border",
@@ -83,15 +83,48 @@ function NavSelector<T extends string>({ items, value, onChange, label, displayF
           variant="outline"
           size="icon"
           className={cn(
-            "h-8 w-8 shrink-0 rounded-md active:pulse-active",
+            "h-7 w-6 shrink-0 rounded-md active:pulse-active",
             accent && "border-primary/60 text-primary hover:bg-primary/10"
           )}
           onClick={next}
           aria-label={`${label} próximo`}
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-3.5 h-3.5" />
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * CycleButton: single button that cycles forward through items.
+ * Click → next option (wraps around). Big icon, small label.
+ */
+function CycleButton<T extends string>({ items, value, onChange, label, displayFn, iconFn }: {
+  items: T[];
+  value: T;
+  onChange: (v: T) => void;
+  label: string;
+  displayFn?: (v: T) => string;
+  iconFn?: (v: T) => string;
+}) {
+  const idx = items.indexOf(value);
+  const next = () => onChange(items[(idx + 1) % items.length]);
+  const text = displayFn ? displayFn(value) : value;
+  const icon = iconFn ? iconFn(value) : '';
+  return (
+    <div className="space-y-1 min-w-0">
+      <label className="block text-center truncate font-medium uppercase tracking-wide text-muted-foreground" style={{ fontSize: '12px' }}>{label}</label>
+      <button
+        onClick={next}
+        aria-label={`${label}: próximo (atual ${text})`}
+        className={cn(
+          "w-full min-w-0 flex items-center justify-center gap-2 rounded-md py-2 px-2 border-2 border-primary/50 bg-secondary/40 hover:bg-primary/10 hover:border-primary transition-all active:scale-95 active:pulse-active"
+        )}
+      >
+        {icon && <span className="text-2xl leading-none">{icon}</span>}
+        <span className="font-semibold text-foreground text-sm truncate" style={{ fontSize: '12px' }}>{text}</span>
+      </button>
     </div>
   );
 }
@@ -179,7 +212,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
         <BeatIndicator beatsPerMeasure={beatsPerMeasure} currentBeat={currentBeat} showLabels />
       </div>
 
-      {/* Selectors: Compasso on top (full width), Subdivisão + Timbre side-by-side equal */}
+      {/* Selectors: Compasso on top (full width), Subdivisão + Timbre as single cycle buttons */}
       <div className="space-y-3">
         <NavSelector
           items={timeSignatures}
@@ -188,41 +221,46 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
           label="Compasso"
         />
         <div className="grid grid-cols-2 gap-2 min-w-0">
-          <div className="min-w-0">
-          <NavSelector
+          <CycleButton
             items={subdivisions.map(s => s.value)}
             value={subdivision}
             onChange={setSubdivision}
             label="Subdivisão"
-            accent
             displayFn={(v) => subdivisions.find(s => s.value === v)?.short || v}
           />
-          </div>
-          <div className="min-w-0">
-          <NavSelector
+          <CycleButton
             items={sounds}
             value={sound}
             onChange={setSound}
             label="Timbre"
-            accent
-            displayFn={(v) => `${soundEmojis[v] || ''} ${v.charAt(0).toUpperCase() + v.slice(1)}`}
+            iconFn={(v) => soundEmojis[v] || '🎵'}
+            displayFn={(v) => v.charAt(0).toUpperCase() + v.slice(1)}
           />
-          </div>
         </div>
       </div>
 
-      {/* Volume & Pan */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        <div>
-          <label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Volume</label>
-          <ResettableSlider resetValue={1} value={[volume]} onValueChange={([v]) => setVolume(v)} min={0} max={1} step={0.01} />
+      {/* Mixer Click — metrônomo (separado do Mixer Sampler) */}
+      <div className="rounded-xl border-2 border-accent/40 bg-accent/5 p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-accent">🎚️ Mixer Click</span>
+          <div className="flex-1 h-px bg-accent/30" />
+          <span className="text-[10px] text-muted-foreground">só metrônomo</span>
         </div>
-        <div>
-          <label className="text-[10px] sm:text-xs text-muted-foreground mb-1 flex items-center justify-between">
-            <span>Pan</span>
-            <span className="text-[9px] sm:text-[10px]">{panLabel(pan)}</span>
-          </label>
-          <ResettableSlider resetValue={0} value={[pan]} onValueChange={([v]) => setPan(v)} min={-1} max={1} step={0.01} />
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div>
+            <label className="text-[10px] sm:text-xs text-muted-foreground mb-1 flex items-center justify-between">
+              <span>Volume</span>
+              <span className="text-[9px] sm:text-[10px] tabular-nums text-foreground/80">{Math.round(volume * 100)}%</span>
+            </label>
+            <ResettableSlider resetValue={0.8} value={[volume]} onValueChange={([v]) => setVolume(v)} min={0} max={1} step={0.01} />
+          </div>
+          <div>
+            <label className="text-[10px] sm:text-xs text-muted-foreground mb-1 flex items-center justify-between">
+              <span>Pan</span>
+              <span className="text-[9px] sm:text-[10px] tabular-nums text-foreground/80">{panLabel(pan)}</span>
+            </label>
+            <ResettableSlider resetValue={0} value={[pan]} onValueChange={([v]) => setPan(v)} min={-1} max={1} step={0.01} />
+          </div>
         </div>
       </div>
     </div>

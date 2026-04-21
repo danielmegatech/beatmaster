@@ -9,7 +9,8 @@ import SamplerPad from '@/components/beatmaster/SamplerPad';
 import FooterPlayer from '@/components/beatmaster/FooterPlayer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, Palette } from 'lucide-react';
+import { Sun, Moon, Palette, HelpCircle } from 'lucide-react';
+import HelpDialog from '@/components/beatmaster/HelpDialog';
 import { defaultPlaylists } from '@/data/defaultPresets';
 import type { Playlist, Song, AppMode } from '@/types/beatmaster';
 
@@ -37,6 +38,7 @@ const Index = () => {
   const [selectedBand, setSelectedBand] = useLocalStorage<string>('bm-selected-band', ALL_BANDS);
   const [ttsEnabled, setTtsEnabled] = useLocalStorage<boolean>('bm-tts-enabled', true);
   const [showSkinPicker, setShowSkinPicker] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [padTrigger, setPadTrigger] = useState<{ padId: number; type: 'down' | 'up' } | null>(null);
 
   // Seed defaults
@@ -151,8 +153,13 @@ const Index = () => {
           <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="h-9 w-9 sm:h-10 sm:w-10">
             {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
           </Button>
+          <Button variant="ghost" size="icon" onClick={() => setShowHelp(true)} className="h-9 w-9 sm:h-10 sm:w-10" title="Ajuda">
+            <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
         </div>
       </header>
+
+      <HelpDialog open={showHelp} onOpenChange={setShowHelp} />
 
       <main className="flex-1 overflow-y-auto overflow-x-hidden pb-[88px] sm:pb-[72px] px-2 sm:px-4">
         {isMobile ? (

@@ -9,7 +9,8 @@ import SamplerPad from '@/components/beatmaster/SamplerPad';
 import FooterPlayer from '@/components/beatmaster/FooterPlayer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, Palette } from 'lucide-react';
+import { Sun, Moon, Palette, HelpCircle } from 'lucide-react';
+import HelpDialog from '@/components/beatmaster/HelpDialog';
 import { defaultPlaylists } from '@/data/defaultPresets';
 import type { Playlist, Song, AppMode } from '@/types/beatmaster';
 
@@ -37,6 +38,7 @@ const Index = () => {
   const [selectedBand, setSelectedBand] = useLocalStorage<string>('bm-selected-band', ALL_BANDS);
   const [ttsEnabled, setTtsEnabled] = useLocalStorage<boolean>('bm-tts-enabled', true);
   const [showSkinPicker, setShowSkinPicker] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [padTrigger, setPadTrigger] = useState<{ padId: number; type: 'down' | 'up' } | null>(null);
 
   // Seed defaults

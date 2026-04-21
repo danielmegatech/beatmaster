@@ -189,6 +189,7 @@ const Index = () => {
                 activePlaylistId={activePlaylistId} setActivePlaylistId={setActivePlaylistId}
                 activeSongId={activeSongId} onSelectSong={onSelectSong}
                 selectedBand={selectedBand} setSelectedBand={setSelectedBand}
+                currentBpm={metro.bpm} currentTimeSignature={metro.timeSignature}
               />
             </TabsContent>
             <TabsContent value="sampler" className="mt-0">
@@ -221,6 +222,7 @@ const Index = () => {
                 activePlaylistId={activePlaylistId} setActivePlaylistId={setActivePlaylistId}
                 activeSongId={activeSongId} onSelectSong={onSelectSong}
                 selectedBand={selectedBand} setSelectedBand={setSelectedBand}
+                currentBpm={metro.bpm} currentTimeSignature={metro.timeSignature}
               />
               <SamplerPad
                 getAudioContext={metro.getAudioContext}

@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
+import { ResettableSlider } from '@/components/ui/resettable-slider';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Square, Volume2, Settings, Upload, Link, ChevronDown, ChevronUp } from 'lucide-react';
@@ -185,7 +185,7 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
                   'text-[10px] sm:text-xs',
                   padColors[i],
                   !buffers[pad.id] && 'opacity-40',
-                  isActive && 'pulse-active brightness-125 ring-2 ring-primary'
+                  isActive && 'brightness-150 ring-2 ring-primary shadow-[0_0_18px_hsl(var(--primary)/0.55)]'
                 )}
               >
                 <span className="truncate w-full px-0.5 sm:px-1">{pad.fileName || pad.name}</span>
@@ -218,13 +218,15 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
               <div key={pad.id} className="flex items-center gap-1.5 sm:gap-2 text-xs">
                 <span className="w-12 sm:w-14 text-muted-foreground truncate text-[10px] sm:text-xs">{pad.name}</span>
                 <Volume2 className="w-3 h-3 text-muted-foreground shrink-0" />
-                <Slider
+                <ResettableSlider
+                  resetValue={0.8}
                   value={[pad.volume]}
                   onValueChange={([v]) => setPadConfigs(prev => prev.map(p => p.id === pad.id ? { ...p, volume: v } : p))}
                   min={0} max={1} step={0.01} className="flex-1 min-w-0"
                 />
                 <span className="text-muted-foreground text-[10px] w-4 shrink-0">Pan</span>
-                <Slider
+                <ResettableSlider
+                  resetValue={0}
                   value={[pad.pan]}
                   onValueChange={([v]) => setPadConfigs(prev => prev.map(p => p.id === pad.id ? { ...p, pan: v } : p))}
                   min={-1} max={1} step={0.01} className="w-16 sm:w-20 shrink-0"

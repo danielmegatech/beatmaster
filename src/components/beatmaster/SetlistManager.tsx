@@ -15,6 +15,8 @@ interface SetlistManagerProps {
   onSelectSong: (song: Song) => void;
   selectedBand: string;
   setSelectedBand: (b: string) => void;
+  currentBpm: number;
+  currentTimeSignature: string;
 }
 
 const ALL_BANDS = '__all__';
@@ -36,7 +38,7 @@ function parseDuration(str: string): number | undefined {
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   playlists, setPlaylists, activePlaylistId, setActivePlaylistId, activeSongId, onSelectSong,
-  selectedBand, setSelectedBand,
+  selectedBand, setSelectedBand, currentBpm, currentTimeSignature,
 }) => {
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Song>>({});
@@ -85,7 +87,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
 
   const addSong = () => {
     if (!activePlaylist) return;
-    const song: Song = { id: crypto.randomUUID(), name: 'Nova Música', bpm: 120, timeSignature: '4/4', notes: '', artist: '' };
+    // Espelha o BPM/compasso atual do metrônomo (útil após Tap Tempo)
+    const song: Song = { id: crypto.randomUUID(), name: 'Nova Música', bpm: currentBpm || 120, timeSignature: currentTimeSignature || '4/4', notes: '', artist: '' };
     updateSongs([...activePlaylist.songs, song]);
     setEditingSongId(song.id);
     setEditForm(song);

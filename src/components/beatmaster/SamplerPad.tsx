@@ -200,19 +200,20 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
         })}
       </div>
 
-      {/* Collapsible Mixer */}
-      <div>
+      {/* Collapsible Mixer Sampler */}
+      <div className="rounded-xl border-2 border-primary/40 bg-primary/5">
         <button
           onClick={() => setMixerOpen(!mixerOpen)}
-          className="flex items-center gap-2 w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1.5 px-1"
+          className="flex items-center gap-2 w-full hover:bg-primary/10 transition-colors py-2 px-3 rounded-t-xl"
         >
-          {mixerOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          <span className="font-medium">Mixer</span>
-          <div className="flex-1 h-px bg-border" />
+          {mixerOpen ? <ChevronUp className="w-3.5 h-3.5 text-primary" /> : <ChevronDown className="w-3.5 h-3.5 text-primary" />}
+          <span className="text-xs font-bold uppercase tracking-wider text-primary">🎚️ Mixer Sampler</span>
+          <div className="flex-1 h-px bg-primary/30" />
+          <span className="text-[10px] text-muted-foreground">só pads</span>
         </button>
 
         {mixerOpen && (
-          <div className="space-y-1.5 pt-1 animate-in slide-in-from-top-2 duration-200">
+          <div className="space-y-1.5 p-2 animate-in slide-in-from-top-2 duration-200">
             {padConfigs.map((pad) => (
               <div key={pad.id} className="flex items-center gap-1.5 sm:gap-2 text-xs">
                 <span className="w-12 sm:w-14 text-muted-foreground truncate text-[10px] sm:text-xs">{pad.name}</span>

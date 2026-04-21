@@ -153,8 +153,13 @@ const Index = () => {
           <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="h-9 w-9 sm:h-10 sm:w-10">
             {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
           </Button>
+          <Button variant="ghost" size="icon" onClick={() => setShowHelp(true)} className="h-9 w-9 sm:h-10 sm:w-10" title="Ajuda">
+            <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
         </div>
       </header>
+
+      <HelpDialog open={showHelp} onOpenChange={setShowHelp} />
 
       <main className="flex-1 overflow-y-auto overflow-x-hidden pb-[88px] sm:pb-[72px] px-2 sm:px-4">
         {isMobile ? (

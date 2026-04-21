@@ -65,7 +65,7 @@ function NavSelector<T extends string>({ items, value, onChange, label, displayF
           variant="outline"
           size="icon"
           className={cn(
-            "h-7 w-6 shrink-0 rounded-md active:pulse-active",
+            "h-7 w-6 shrink-0 rounded-md",
             accent && "border-primary/60 text-primary hover:bg-primary/10"
           )}
           onClick={prev}
@@ -83,7 +83,7 @@ function NavSelector<T extends string>({ items, value, onChange, label, displayF
           variant="outline"
           size="icon"
           className={cn(
-            "h-7 w-6 shrink-0 rounded-md active:pulse-active",
+            "h-7 w-6 shrink-0 rounded-md",
             accent && "border-primary/60 text-primary hover:bg-primary/10"
           )}
           onClick={next}
@@ -119,7 +119,7 @@ function CycleButton<T extends string>({ items, value, onChange, label, displayF
         onClick={next}
         aria-label={`${label}: próximo (atual ${text})`}
         className={cn(
-          "w-full min-w-0 flex items-center justify-center gap-2 rounded-md py-2 px-2 border-2 border-primary/50 bg-secondary/40 hover:bg-primary/10 hover:border-primary transition-all active:scale-95 active:pulse-active"
+          "w-full min-w-0 flex items-center justify-center gap-2 rounded-md py-2 px-2 border-2 border-primary/50 bg-secondary/40 hover:bg-primary/10 hover:border-primary transition-all active:scale-95"
         )}
       >
         {icon && <span className="text-2xl leading-none">{icon}</span>}
@@ -154,7 +154,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
           variant={countIn ? 'default' : 'outline'}
           size="sm"
           onClick={() => setCountIn(!countIn)}
-          className={cn("text-xs h-8 gap-1 transition-all", countIn && "pulse-active")}
+          className="text-xs h-8 gap-1 transition-all"
           title="Count-in: conta o compasso antes de iniciar"
         >
           <Timer className="w-3.5 h-3.5" />
@@ -198,7 +198,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
           <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setBpm(Math.max(40, bpm - 1))}>
             <Minus className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="outline" onClick={tapTempo} className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm px-3 sm:px-4 active:pulse-active">
+          <Button variant="outline" onClick={tapTempo} className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm px-3 sm:px-4">
             <Hand className="w-3.5 h-3.5" /> Tap
           </Button>
           <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setBpm(Math.min(240, bpm + 1))}>

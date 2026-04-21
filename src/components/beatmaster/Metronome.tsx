@@ -212,7 +212,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
         <BeatIndicator beatsPerMeasure={beatsPerMeasure} currentBeat={currentBeat} showLabels />
       </div>
 
-      {/* Selectors: Compasso on top (full width), Subdivisão + Timbre side-by-side equal */}
+      {/* Selectors: Compasso on top (full width), Subdivisão + Timbre as single cycle buttons */}
       <div className="space-y-3">
         <NavSelector
           items={timeSignatures}
@@ -221,41 +221,46 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
           label="Compasso"
         />
         <div className="grid grid-cols-2 gap-2 min-w-0">
-          <div className="min-w-0">
-          <NavSelector
+          <CycleButton
             items={subdivisions.map(s => s.value)}
             value={subdivision}
             onChange={setSubdivision}
             label="Subdivisão"
-            accent
             displayFn={(v) => subdivisions.find(s => s.value === v)?.short || v}
           />
-          </div>
-          <div className="min-w-0">
-          <NavSelector
+          <CycleButton
             items={sounds}
             value={sound}
             onChange={setSound}
             label="Timbre"
-            accent
-            displayFn={(v) => `${soundEmojis[v] || ''} ${v.charAt(0).toUpperCase() + v.slice(1)}`}
+            iconFn={(v) => soundEmojis[v] || '🎵'}
+            displayFn={(v) => v.charAt(0).toUpperCase() + v.slice(1)}
           />
-          </div>
         </div>
       </div>
 
-      {/* Volume & Pan */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        <div>
-          <label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Volume</label>
-          <ResettableSlider resetValue={1} value={[volume]} onValueChange={([v]) => setVolume(v)} min={0} max={1} step={0.01} />
+      {/* Mixer Click — metrônomo (separado do Mixer Sampler) */}
+      <div className="rounded-xl border-2 border-accent/40 bg-accent/5 p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-accent">🎚️ Mixer Click</span>
+          <div className="flex-1 h-px bg-accent/30" />
+          <span className="text-[10px] text-muted-foreground">só metrônomo</span>
         </div>
-        <div>
-          <label className="text-[10px] sm:text-xs text-muted-foreground mb-1 flex items-center justify-between">
-            <span>Pan</span>
-            <span className="text-[9px] sm:text-[10px]">{panLabel(pan)}</span>
-          </label>
-          <ResettableSlider resetValue={0} value={[pan]} onValueChange={([v]) => setPan(v)} min={-1} max={1} step={0.01} />
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div>
+            <label className="text-[10px] sm:text-xs text-muted-foreground mb-1 flex items-center justify-between">
+              <span>Volume</span>
+              <span className="text-[9px] sm:text-[10px] tabular-nums text-foreground/80">{Math.round(volume * 100)}%</span>
+            </label>
+            <ResettableSlider resetValue={0.8} value={[volume]} onValueChange={([v]) => setVolume(v)} min={0} max={1} step={0.01} />
+          </div>
+          <div>
+            <label className="text-[10px] sm:text-xs text-muted-foreground mb-1 flex items-center justify-between">
+              <span>Pan</span>
+              <span className="text-[9px] sm:text-[10px] tabular-nums text-foreground/80">{panLabel(pan)}</span>
+            </label>
+            <ResettableSlider resetValue={0} value={[pan]} onValueChange={([v]) => setPan(v)} min={-1} max={1} step={0.01} />
+          </div>
         </div>
       </div>
     </div>

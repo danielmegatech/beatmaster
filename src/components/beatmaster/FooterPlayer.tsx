@@ -347,7 +347,8 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
           )}
           <div className="flex items-center gap-1 shrink-0">
             <Volume2 className="w-3 h-3 text-muted-foreground" />
-            <ResettableSlider resetValue={1} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} className="w-16" />
+            <ResettableSlider resetValue={0.8} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} className="w-12" />
+            <span className="text-[9px] tabular-nums text-foreground/80 w-7 text-right">{Math.round(masterVolume * 100)}%</span>
           </div>
         </div>
       </div>

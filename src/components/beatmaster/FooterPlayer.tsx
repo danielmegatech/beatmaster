@@ -299,7 +299,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
           <div className="flex items-center gap-1">
             <Button
               variant="ghost" size="icon"
-              className={cn("h-7 w-7 active:pulse-active", isPlaying && mode === 'setlist' && "pulse-active")}
+              className="h-7 w-7"
               onClick={onPrev} disabled={mode === 'free'}
             >
               <SkipBack className="w-3.5 h-3.5" />
@@ -312,7 +312,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             </Button>
             <Button
               variant="ghost" size="icon"
-              className={cn("h-7 w-7 active:pulse-active", isPlaying && mode === 'setlist' && "pulse-active")}
+              className="h-7 w-7"
               onClick={onNext} disabled={mode === 'free'}
             >
               <SkipForward className="w-3.5 h-3.5" />
@@ -350,11 +350,6 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
               {formatTime(Math.min(songElapsed, activeSong.duration))}/{formatTime(activeSong.duration)}
             </span>
           )}
-          <div className="flex items-center gap-1 shrink-0">
-            <Volume2 className="w-3 h-3 text-muted-foreground" />
-            <ResettableSlider resetValue={0.8} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} className="w-12" />
-            <span className="text-[9px] tabular-nums text-foreground/80 w-7 text-right">{Math.round(masterVolume * 100)}%</span>
-          </div>
         </div>
       </div>
 
@@ -398,7 +393,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
           <div className="flex items-center gap-1.5">
             <Button
               variant="ghost" size="icon"
-              className={cn("h-7 w-7 md:h-8 md:w-8 active:pulse-active", isPlaying && mode === 'setlist' && "pulse-active")}
+              className="h-7 w-7 md:h-8 md:w-8"
               onClick={onPrev} disabled={mode === 'free'}
             >
               <SkipBack className="w-3.5 h-3.5" />
@@ -411,7 +406,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             </Button>
             <Button
               variant="ghost" size="icon"
-              className={cn("h-7 w-7 md:h-8 md:w-8 active:pulse-active", isPlaying && mode === 'setlist' && "pulse-active")}
+              className="h-7 w-7 md:h-8 md:w-8"
               onClick={onNext} disabled={mode === 'free'}
             >
               <SkipForward className="w-3.5 h-3.5" />
@@ -423,31 +418,13 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             <span className="text-sm tabular-nums font-semibold text-foreground">{bpm}</span>
           </div>
 
-          <div className="flex items-center gap-2 w-32 md:w-36">
-            <Volume2 className="w-4 h-4 text-muted-foreground shrink-0" />
-            <ResettableSlider resetValue={0.8} value={[masterVolume]} onValueChange={([v]) => setMasterVolume(v)} min={0} max={1} step={0.01} />
-            <span className="text-[10px] tabular-nums text-foreground/80 w-9 text-right shrink-0">{Math.round(masterVolume * 100)}%</span>
-          </div>
-
-          {/* Pan slider (replaces L/C/R buttons) — double-click to center */}
-          <div className="hidden lg:flex items-center gap-2 w-28">
-            <span className="text-[10px] text-muted-foreground shrink-0">Pan</span>
-            <ResettableSlider resetValue={0} value={[pan]} onValueChange={([v]) => setPan(v)} min={-1} max={1} step={0.01} />
-            <span className="text-[10px] tabular-nums text-foreground/80 w-10 text-right shrink-0">
-              {Math.abs(pan) < 0.05 ? 'C' : `${pan < 0 ? 'L' : 'R'}${Math.round(Math.abs(pan) * 100)}`}
-            </span>
-          </div>
-
           {/* Count-in + TTS toggle */}
           <div className="hidden md:flex items-center gap-1">
             <Button
               variant={countIn ? 'default' : 'outline'}
               size="sm"
               onClick={() => setCountIn(!countIn)}
-              className={cn(
-                "text-[10px] h-7 gap-1 px-2 transition-all",
-                countIn && "pulse-active"
-              )}
+              className="text-[10px] h-7 gap-1 px-2 transition-all"
               title="Count-in: 2 compassos antes de iniciar"
             >
               <Timer className="w-3 h-3" /> Count In
@@ -458,7 +435,6 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
               onClick={() => setTtsEnabled(!ttsEnabled)}
               className={cn(
                 "text-[10px] h-7 gap-1 px-2 transition-all",
-                ttsEnabled && "pulse-active",
                 announcing && "border-primary bg-primary/20"
               )}
               title={ttsEnabled ? "Anúncio por voz ativado (toca antes de cada música)" : "Anúncio por voz desativado"}

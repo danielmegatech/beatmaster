@@ -35,7 +35,7 @@ const Index = () => {
   const [mode, setMode] = useLocalStorage<AppMode>('bm-mode', 'free');
   const [isDark, setIsDark] = useLocalStorage<boolean>('bm-dark-mode', true);
   const [skin, setSkin] = useLocalStorage<SkinColor>('bm-skin', 'purple');
-  const [selectedBand, setSelectedBand] = useLocalStorage<string>('bm-selected-band', ALL_BANDS);
+  
   const [ttsEnabled, setTtsEnabled] = useLocalStorage<boolean>('bm-tts-enabled', true);
   const [showSkinPicker, setShowSkinPicker] = useState(false);
   const [showHelp, setShowHelp] = useState(false);

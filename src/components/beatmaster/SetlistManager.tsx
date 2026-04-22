@@ -34,25 +34,14 @@ function parseDuration(str: string): number | undefined {
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   playlists, setPlaylists, activePlaylistId, setActivePlaylistId, activeSongId, onSelectSong,
-  selectedBand, setSelectedBand, currentBpm, currentTimeSignature,
+  currentBpm, currentTimeSignature,
 }) => {
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Song>>({});
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [durationInput, setDurationInput] = useState('');
-  const [addingBand, setAddingBand] = useState(false);
-  const [newBandName, setNewBandName] = useState('');
 
-  const bands = useMemo(() => {
-    const set = new Set(playlists.map(p => p.band || 'Geral'));
-    return Array.from(set).sort();
-  }, [playlists]);
-
-  // Filtered playlists by selected band (band selector lives in header)
-  const visiblePlaylists = useMemo(() => {
-    if (selectedBand === ALL_BANDS) return playlists;
-    return playlists.filter(p => (p.band || 'Geral') === selectedBand);
-  }, [playlists, selectedBand]);
+  const visiblePlaylists = playlists;
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || null;
 
@@ -62,8 +51,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
 
   const addPlaylist = () => {
     const name = newPlaylistName.trim() || `Setlist ${playlists.length + 1}`;
-    const band = selectedBand === ALL_BANDS ? 'Geral' : selectedBand;
-    const pl: Playlist = { id: crypto.randomUUID(), name, songs: [], band };
+    const pl: Playlist = { id: crypto.randomUUID(), name, songs: [], band: 'Geral' };
     setPlaylists(prev => [...prev, pl]);
     setActivePlaylistId(pl.id);
     setNewPlaylistName('');

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,13 +13,9 @@ interface SetlistManagerProps {
   setActivePlaylistId: (id: string | null) => void;
   activeSongId: string | null;
   onSelectSong: (song: Song) => void;
-  selectedBand: string;
-  setSelectedBand: (b: string) => void;
   currentBpm: number;
   currentTimeSignature: string;
 }
-
-const ALL_BANDS = '__all__';
 
 function formatDuration(seconds?: number): string {
   if (!seconds) return '';
@@ -38,25 +34,14 @@ function parseDuration(str: string): number | undefined {
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   playlists, setPlaylists, activePlaylistId, setActivePlaylistId, activeSongId, onSelectSong,
-  selectedBand, setSelectedBand, currentBpm, currentTimeSignature,
+  currentBpm, currentTimeSignature,
 }) => {
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Song>>({});
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [durationInput, setDurationInput] = useState('');
-  const [addingBand, setAddingBand] = useState(false);
-  const [newBandName, setNewBandName] = useState('');
 
-  const bands = useMemo(() => {
-    const set = new Set(playlists.map(p => p.band || 'Geral'));
-    return Array.from(set).sort();
-  }, [playlists]);
-
-  // Filtered playlists by selected band (band selector lives in header)
-  const visiblePlaylists = useMemo(() => {
-    if (selectedBand === ALL_BANDS) return playlists;
-    return playlists.filter(p => (p.band || 'Geral') === selectedBand);
-  }, [playlists, selectedBand]);
+  const visiblePlaylists = playlists;
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || null;
 
@@ -66,8 +51,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
 
   const addPlaylist = () => {
     const name = newPlaylistName.trim() || `Setlist ${playlists.length + 1}`;
-    const band = selectedBand === ALL_BANDS ? 'Geral' : selectedBand;
-    const pl: Playlist = { id: crypto.randomUUID(), name, songs: [], band };
+    const pl: Playlist = { id: crypto.randomUUID(), name, songs: [], band: 'Geral' };
     setPlaylists(prev => [...prev, pl]);
     setActivePlaylistId(pl.id);
     setNewPlaylistName('');
@@ -191,17 +175,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     e.target.value = '';
   };
 
-  const addBand = () => {
-    const name = newBandName.trim();
-    if (!name) { setAddingBand(false); return; }
-    const pl: Playlist = { id: crypto.randomUUID(), name: `Setlist 1`, songs: [], band: name };
-    setPlaylists(prev => [...prev, pl]);
-    setSelectedBand(name);
-    setActivePlaylistId(pl.id);
-    setNewBandName('');
-    setAddingBand(false);
-  };
-
   return (
     <div className="glass rounded-2xl p-3 sm:p-5 space-y-3 sm:space-y-4 min-w-0">
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -212,48 +185,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
           </div>
         )}
       </div>
-
-      {/* Band tabs (horizontal scroll) */}
-      <ScrollArea className="w-full">
-        <div className="flex gap-1.5 items-center pb-2 min-w-max">
-          <Button
-            variant={selectedBand === ALL_BANDS ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedBand(ALL_BANDS)}
-            className="text-xs h-9 px-3 shrink-0"
-          >
-            🎵 Todas
-          </Button>
-          {bands.map(b => (
-            <Button
-              key={b}
-              variant={selectedBand === b ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedBand(b)}
-              className="text-xs h-9 px-3 shrink-0"
-            >
-              {b}
-            </Button>
-          ))}
-          {addingBand ? (
-            <div className="flex gap-1 shrink-0">
-              <Input
-                autoFocus
-                placeholder="Nome banda..."
-                value={newBandName}
-                onChange={e => setNewBandName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addBand(); } if (e.key === 'Escape') setAddingBand(false); }}
-                onBlur={addBand}
-                className="h-9 w-28 text-xs"
-              />
-            </div>
-          ) : (
-            <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => setAddingBand(true)} title="Nova banda">
-              <Plus className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-      </ScrollArea>
 
       {/* Playlist tabs */}
       <ScrollArea className="w-full">

@@ -24,8 +24,6 @@ const skins: { id: SkinColor; label: string; color: string }[] = [
   { id: 'orange', label: 'Laranja', color: 'bg-orange-500' },
 ];
 
-const ALL_BANDS = '__all__';
-
 const Index = () => {
   const metro = useMetronome();
   const isMobile = useIsMobile();
@@ -35,7 +33,7 @@ const Index = () => {
   const [mode, setMode] = useLocalStorage<AppMode>('bm-mode', 'free');
   const [isDark, setIsDark] = useLocalStorage<boolean>('bm-dark-mode', true);
   const [skin, setSkin] = useLocalStorage<SkinColor>('bm-skin', 'purple');
-  const [selectedBand, setSelectedBand] = useLocalStorage<string>('bm-selected-band', ALL_BANDS);
+  
   const [ttsEnabled, setTtsEnabled] = useLocalStorage<boolean>('bm-tts-enabled', true);
   const [showSkinPicker, setShowSkinPicker] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -188,7 +186,6 @@ const Index = () => {
                 playlists={playlists} setPlaylists={setPlaylists}
                 activePlaylistId={activePlaylistId} setActivePlaylistId={setActivePlaylistId}
                 activeSongId={activeSongId} onSelectSong={onSelectSong}
-                selectedBand={selectedBand} setSelectedBand={setSelectedBand}
                 currentBpm={metro.bpm} currentTimeSignature={metro.timeSignature}
               />
             </TabsContent>
@@ -221,7 +218,6 @@ const Index = () => {
                 playlists={playlists} setPlaylists={setPlaylists}
                 activePlaylistId={activePlaylistId} setActivePlaylistId={setActivePlaylistId}
                 activeSongId={activeSongId} onSelectSong={onSelectSong}
-                selectedBand={selectedBand} setSelectedBand={setSelectedBand}
                 currentBpm={metro.bpm} currentTimeSignature={metro.timeSignature}
               />
               <SamplerPad

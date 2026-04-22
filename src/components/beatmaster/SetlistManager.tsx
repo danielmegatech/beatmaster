@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,13 +13,9 @@ interface SetlistManagerProps {
   setActivePlaylistId: (id: string | null) => void;
   activeSongId: string | null;
   onSelectSong: (song: Song) => void;
-  selectedBand: string;
-  setSelectedBand: (b: string) => void;
   currentBpm: number;
   currentTimeSignature: string;
 }
-
-const ALL_BANDS = '__all__';
 
 function formatDuration(seconds?: number): string {
   if (!seconds) return '';

@@ -42,6 +42,7 @@ export interface PadConfig {
   volume: number;
   pan: number;
   mode: PadMode;
+  muted?: boolean;
   audioBuffer?: AudioBuffer | null;
   fileName?: string;
   audioUrl?: string;

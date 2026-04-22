@@ -1,9 +1,10 @@
 import React, { useRef, useState, useCallback, useEffect, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ResettableSlider } from '@/components/ui/resettable-slider';
+import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Square, Volume2, Settings, Upload, Link, ChevronDown, ChevronUp } from 'lucide-react';
+import { Square, Volume2, VolumeX, Settings, Upload, Link, ChevronDown, ChevronUp } from 'lucide-react';
 import type { PadConfig } from '@/types/beatmaster';
 import { defaultPadConfigs } from '@/data/defaultPresets';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -74,75 +75,68 @@ const PadButton = memo(({ pad, index, isActive, hasBuffer, onTrigger, onConfig }
 });
 PadButton.displayName = 'PadButton';
 
-// ============== Mixer Row (local state for smooth dragging) ==============
+// ============== Mixer Row (matches reference design) ==============
 interface MixerControlProps {
   pad: PadCfg;
   index: number;
   onCommit: (id: number, patch: Partial<PadCfg>) => void;
-  layout: 'row' | 'column';
 }
 
-const MixerControl = memo(({ pad, index, onCommit, layout }: MixerControlProps) => {
+const MixerControl = memo(({ pad, index, onCommit }: MixerControlProps) => {
   const [vol, setVol] = useState(pad.volume);
   const [pan, setPan] = useState(pad.pan);
+  const muted = !!pad.muted;
 
-  // Sync if external change (e.g. reset)
   useEffect(() => { setVol(pad.volume); }, [pad.volume]);
   useEffect(() => { setPan(pad.pan); }, [pad.pan]);
 
-  if (layout === 'column') {
-    const panLabel = Math.abs(pan) < 0.05 ? 'C' : pan < 0 ? `L${Math.round(-pan * 100)}` : `R${Math.round(pan * 100)}`;
-    return (
-      <div className={cn('flex flex-col items-center gap-2 p-2 rounded-lg border bg-background/30', padBorderColors[index])}>
-        <span className="text-[10px] font-semibold truncate w-full text-center">{pad.name}</span>
-        <div className="w-full flex items-center gap-1">
-          <Volume2 className="w-3 h-3 text-muted-foreground shrink-0" />
-          <ResettableSlider
-            resetValue={0.8}
-            value={[vol]}
-            onValueChange={([v]) => setVol(v)}
-            onValueCommit={([v]) => onCommit(pad.id, { volume: v })}
-            onReset={(v) => { setVol(v); onCommit(pad.id, { volume: v }); }}
-            min={0} max={1} step={0.01} className="flex-1 min-w-0"
-          />
-          <span className="text-[9px] text-muted-foreground w-8 text-right tabular-nums">{Math.round(vol * 100)}%</span>
-        </div>
-        <div className="w-full flex items-center gap-1">
-          <span className="text-[9px] text-muted-foreground shrink-0 w-6">Pan</span>
-          <ResettableSlider
-            resetValue={0}
-            value={[pan]}
-            onValueChange={([v]) => setPan(v)}
-            onValueCommit={([v]) => onCommit(pad.id, { pan: v })}
-            onReset={(v) => { setPan(v); onCommit(pad.id, { pan: v }); }}
-            min={-1} max={1} step={0.01} className="flex-1 min-w-0"
-          />
-          <span className="text-[9px] text-muted-foreground w-8 text-right tabular-nums">{panLabel}</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2 text-xs">
-      <span className="w-12 sm:w-14 text-muted-foreground truncate text-[10px] sm:text-xs">{pad.name}</span>
-      <Volume2 className="w-3 h-3 text-muted-foreground shrink-0" />
+    <div className="grid grid-cols-[80px_auto_auto_1fr_auto_140px] sm:grid-cols-[100px_auto_auto_1fr_auto_180px] items-center gap-2 sm:gap-3 text-xs">
+      {/* Pad name */}
+      <span className={cn(
+        'truncate font-medium text-[11px] sm:text-xs pl-1 border-l-2',
+        padBorderColors[index],
+        muted && 'opacity-50 line-through'
+      )}>
+        {pad.name}
+      </span>
+
+      {/* Mute toggle */}
+      <Switch
+        checked={!muted}
+        onCheckedChange={(on) => onCommit(pad.id, { muted: !on })}
+        className="scale-75 data-[state=checked]:bg-primary"
+        title={muted ? 'Unmute' : 'Mute'}
+      />
+
+      {/* Volume icon */}
+      {muted
+        ? <VolumeX className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+        : <Volume2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+
+      {/* Volume slider (large, takes remaining space) */}
       <ResettableSlider
         resetValue={0.8}
         value={[vol]}
         onValueChange={([v]) => setVol(v)}
         onValueCommit={([v]) => onCommit(pad.id, { volume: v })}
         onReset={(v) => { setVol(v); onCommit(pad.id, { volume: v }); }}
-        min={0} max={1} step={0.01} className="flex-1 min-w-0"
+        min={0} max={1} step={0.01}
+        className={cn('min-w-0', muted && 'opacity-40')}
       />
-      <span className="text-muted-foreground text-[10px] w-4 shrink-0">Pan</span>
+
+      {/* Pan label */}
+      <span className="text-[10px] text-muted-foreground shrink-0">Pan</span>
+
+      {/* Pan slider (compact) */}
       <ResettableSlider
         resetValue={0}
         value={[pan]}
         onValueChange={([v]) => setPan(v)}
         onValueCommit={([v]) => onCommit(pad.id, { pan: v })}
         onReset={(v) => { setPan(v); onCommit(pad.id, { pan: v }); }}
-        min={-1} max={1} step={0.01} className="w-16 sm:w-20 shrink-0"
+        min={-1} max={1} step={0.01}
+        className={cn(muted && 'opacity-40')}
       />
     </div>
   );
@@ -208,7 +202,7 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     const ctx = getAudioContext();
     const mg = getMasterGain();
     const gain = ctx.createGain();
-    gain.gain.value = pad.volume;
+    gain.gain.value = pad.muted ? 0 : pad.volume;
     const panner = ctx.createStereoPanner();
     panner.pan.value = pad.pan;
     gain.connect(panner);
@@ -325,19 +319,10 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
         </button>
 
         {mixerOpen && (
-          <div className="p-2 animate-in slide-in-from-top-2 duration-200">
-            {/* Mobile: vertical stack of rows */}
-            <div className="space-y-1.5 md:hidden">
-              {padConfigs.map((pad, i) => (
-                <MixerControl key={pad.id} pad={pad} index={i} onCommit={commitPadPatch} layout="row" />
-              ))}
-            </div>
-            {/* md+: horizontal grid, one column per pad */}
-            <div className="hidden md:grid md:grid-cols-5 gap-3">
-              {padConfigs.map((pad, i) => (
-                <MixerControl key={pad.id} pad={pad} index={i} onCommit={commitPadPatch} layout="column" />
-              ))}
-            </div>
+          <div className="p-2 sm:p-3 space-y-1.5 animate-in slide-in-from-top-2 duration-200">
+            {padConfigs.map((pad, i) => (
+              <MixerControl key={pad.id} pad={pad} index={i} onCommit={commitPadPatch} />
+            ))}
           </div>
         )}
       </div>

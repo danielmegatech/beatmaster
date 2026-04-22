@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Plus, Trash2, Download, Upload, Clock, Coffee } from 'lucide-react';
 import type { Song, Playlist } from '@/types/beatmaster';
 import SongCard from './SongCard';
@@ -187,8 +187,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       </div>
 
       {/* Playlist tabs */}
-      <ScrollArea className="w-full">
-        <div className="flex gap-1.5 sm:gap-2 items-center pb-2 min-w-max">
+      <ScrollArea className="w-full whitespace-nowrap">
+        <div className="flex gap-1.5 sm:gap-2 items-center pb-3 min-w-max">
           {visiblePlaylists.map(pl => (
             <div key={pl.id} className="flex items-center gap-0.5 shrink-0">
               <Button
@@ -215,6 +215,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
             <Button size="icon" variant="outline" className="h-8 w-8" onClick={addPlaylist}><Plus className="w-3 h-3" /></Button>
           </div>
         </div>
+        <ScrollBar orientation="horizontal" />
       </ScrollArea>
 
       {/* Action buttons + import/export */}

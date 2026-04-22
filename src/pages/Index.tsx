@@ -24,8 +24,6 @@ const skins: { id: SkinColor; label: string; color: string }[] = [
   { id: 'orange', label: 'Laranja', color: 'bg-orange-500' },
 ];
 
-const ALL_BANDS = '__all__';
-
 const Index = () => {
   const metro = useMetronome();
   const isMobile = useIsMobile();

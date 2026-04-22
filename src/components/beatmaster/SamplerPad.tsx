@@ -1,9 +1,10 @@
 import React, { useRef, useState, useCallback, useEffect, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ResettableSlider } from '@/components/ui/resettable-slider';
+import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Square, Volume2, Settings, Upload, Link, ChevronDown, ChevronUp } from 'lucide-react';
+import { Square, Volume2, VolumeX, Settings, Upload, Link, ChevronDown, ChevronUp } from 'lucide-react';
 import type { PadConfig } from '@/types/beatmaster';
 import { defaultPadConfigs } from '@/data/defaultPresets';
 import { useLocalStorage } from '@/hooks/useLocalStorage';

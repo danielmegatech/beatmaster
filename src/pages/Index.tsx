@@ -189,6 +189,7 @@ const Index = () => {
                 activePlaylistId={activePlaylistId} setActivePlaylistId={setActivePlaylistId}
                 activeSongId={activeSongId} onSelectSong={onSelectSong}
                 selectedBand={selectedBand} setSelectedBand={setSelectedBand}
+
                 currentBpm={metro.bpm} currentTimeSignature={metro.timeSignature}
               />
             </TabsContent>

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ResettableSlider } from '@/components/ui/resettable-slider';
 import { Input } from '@/components/ui/input';
@@ -23,8 +23,135 @@ const padColors = [
   'from-purple-500/30 to-purple-700/10 border-purple-500/40 hover:border-purple-400',
 ];
 
+const padBorderColors = [
+  'border-red-500/40',
+  'border-orange-500/40',
+  'border-yellow-500/40',
+  'border-cyan-500/40',
+  'border-purple-500/40',
+];
+
+type PadCfg = Omit<PadConfig, 'audioBuffer'>;
+
+// ============== Memoized Pad Button ==============
+interface PadButtonProps {
+  pad: PadCfg;
+  index: number;
+  isActive: boolean;
+  hasBuffer: boolean;
+  onTrigger: (id: number) => void;
+  onConfig: (id: number) => void;
+}
+
+const PadButton = memo(({ pad, index, isActive, hasBuffer, onTrigger, onConfig }: PadButtonProps) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    onTrigger(pad.id);
+  }, [pad.id, onTrigger]);
+
+  const handleConfig = useCallback(() => onConfig(pad.id), [pad.id, onConfig]);
+
+  return (
+    <div className="relative flex flex-col items-center gap-0.5 sm:gap-1 w-16 sm:w-20 md:w-24 max-w-[100px]">
+      <button
+        onPointerDown={handlePointerDown}
+        className={cn(
+          `w-full aspect-square bg-gradient-to-b border rounded-lg sm:rounded-xl flex flex-col items-center justify-center font-bold transition-all active:scale-95 active:brightness-125 touch-none select-none`,
+          'text-[10px] sm:text-xs',
+          padColors[index],
+          !hasBuffer && 'opacity-40',
+          isActive && 'brightness-150 ring-2 ring-primary shadow-[0_0_18px_hsl(var(--primary)/0.55)]'
+        )}
+      >
+        <span className="truncate w-full px-0.5 sm:px-1">{pad.fileName || pad.name}</span>
+        <span className="text-[8px] sm:text-[9px] text-muted-foreground opacity-60 mt-0.5">[{index + 1}]</span>
+      </button>
+      <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={handleConfig}>
+        <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+      </Button>
+    </div>
+  );
+});
+PadButton.displayName = 'PadButton';
+
+// ============== Mixer Row (local state for smooth dragging) ==============
+interface MixerControlProps {
+  pad: PadCfg;
+  index: number;
+  onCommit: (id: number, patch: Partial<PadCfg>) => void;
+  layout: 'row' | 'column';
+}
+
+const MixerControl = memo(({ pad, index, onCommit, layout }: MixerControlProps) => {
+  const [vol, setVol] = useState(pad.volume);
+  const [pan, setPan] = useState(pad.pan);
+
+  // Sync if external change (e.g. reset)
+  useEffect(() => { setVol(pad.volume); }, [pad.volume]);
+  useEffect(() => { setPan(pad.pan); }, [pad.pan]);
+
+  if (layout === 'column') {
+    const panLabel = Math.abs(pan) < 0.05 ? 'C' : pan < 0 ? `L${Math.round(-pan * 100)}` : `R${Math.round(pan * 100)}`;
+    return (
+      <div className={cn('flex flex-col items-center gap-2 p-2 rounded-lg border bg-background/30', padBorderColors[index])}>
+        <span className="text-[10px] font-semibold truncate w-full text-center">{pad.name}</span>
+        <div className="w-full flex items-center gap-1">
+          <Volume2 className="w-3 h-3 text-muted-foreground shrink-0" />
+          <ResettableSlider
+            resetValue={0.8}
+            value={[vol]}
+            onValueChange={([v]) => setVol(v)}
+            onValueCommit={([v]) => onCommit(pad.id, { volume: v })}
+            onReset={(v) => { setVol(v); onCommit(pad.id, { volume: v }); }}
+            min={0} max={1} step={0.01} className="flex-1 min-w-0"
+          />
+          <span className="text-[9px] text-muted-foreground w-8 text-right tabular-nums">{Math.round(vol * 100)}%</span>
+        </div>
+        <div className="w-full flex items-center gap-1">
+          <span className="text-[9px] text-muted-foreground shrink-0 w-6">Pan</span>
+          <ResettableSlider
+            resetValue={0}
+            value={[pan]}
+            onValueChange={([v]) => setPan(v)}
+            onValueCommit={([v]) => onCommit(pad.id, { pan: v })}
+            onReset={(v) => { setPan(v); onCommit(pad.id, { pan: v }); }}
+            min={-1} max={1} step={0.01} className="flex-1 min-w-0"
+          />
+          <span className="text-[9px] text-muted-foreground w-8 text-right tabular-nums">{panLabel}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 sm:gap-2 text-xs">
+      <span className="w-12 sm:w-14 text-muted-foreground truncate text-[10px] sm:text-xs">{pad.name}</span>
+      <Volume2 className="w-3 h-3 text-muted-foreground shrink-0" />
+      <ResettableSlider
+        resetValue={0.8}
+        value={[vol]}
+        onValueChange={([v]) => setVol(v)}
+        onValueCommit={([v]) => onCommit(pad.id, { volume: v })}
+        onReset={(v) => { setVol(v); onCommit(pad.id, { volume: v }); }}
+        min={0} max={1} step={0.01} className="flex-1 min-w-0"
+      />
+      <span className="text-muted-foreground text-[10px] w-4 shrink-0">Pan</span>
+      <ResettableSlider
+        resetValue={0}
+        value={[pan]}
+        onValueChange={([v]) => setPan(v)}
+        onValueCommit={([v]) => onCommit(pad.id, { pan: v })}
+        onReset={(v) => { setPan(v); onCommit(pad.id, { pan: v }); }}
+        min={-1} max={1} step={0.01} className="w-16 sm:w-20 shrink-0"
+      />
+    </div>
+  );
+});
+MixerControl.displayName = 'MixerControl';
+
+// ============== Main Component ==============
 const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain, padTrigger }) => {
-  const [padConfigs, setPadConfigs] = useLocalStorage<Omit<PadConfig, 'audioBuffer'>[]>(
+  const [padConfigs, setPadConfigs] = useLocalStorage<PadCfg[]>(
     'bm-pad-configs',
     defaultPadConfigs.map(({ audioBuffer, ...rest }) => rest)
   );
@@ -35,8 +162,13 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
   const [editName, setEditName] = useState('');
   const [mixerOpen, setMixerOpen] = useState(false);
 
+  // Refs mirror state so audio handlers have empty deps and never recreate
+  const padConfigsRef = useRef(padConfigs);
+  const buffersRef = useRef(buffers);
+  useEffect(() => { padConfigsRef.current = padConfigs; }, [padConfigs]);
+  useEffect(() => { buffersRef.current = buffers; }, [buffers]);
+
   const activeSourcesRef = useRef<Record<number, { source: AudioBufferSourceNode; gain: GainNode }>>({});
-  const loopSourcesRef = useRef<Record<number, { source: AudioBufferSourceNode; interval: number }>>({});
 
   // Load audio from URLs on mount
   useEffect(() => {
@@ -45,7 +177,7 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
         loadFromUrl(pad.audioUrl, pad.id);
       }
     });
-  }, []); // Only on mount
+  }, []); // eslint-disable-line
 
   const loadFromUrl = async (url: string, padId: number) => {
     try {
@@ -67,10 +199,11 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     setPadConfigs(prev => prev.map(p => p.id === padId ? { ...p, fileName: file.name, audioUrl: undefined } : p));
   };
 
+  // Stable handlers (empty deps): read from refs
   const playSampler = useCallback((padId: number) => {
-    const buffer = buffers[padId];
+    const buffer = buffersRef.current[padId];
     if (!buffer) return;
-    const pad = padConfigs.find(p => p.id === padId);
+    const pad = padConfigsRef.current.find(p => p.id === padId);
     if (!pad) return;
     const ctx = getAudioContext();
     const mg = getMasterGain();
@@ -89,7 +222,7 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     source.onended = () => {
       setActivePads(prev => { const n = { ...prev }; delete n[padId]; return n; });
     };
-  }, [buffers, padConfigs, getAudioContext, getMasterGain]);
+  }, [getAudioContext, getMasterGain]);
 
   const stopSampler = useCallback((padId: number) => {
     const active = activeSourcesRef.current[padId];
@@ -105,20 +238,6 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     }
   }, [getAudioContext]);
 
-  // Loop mode removed — pads operate solely as toggle samplers (press = play, press again = stop).
-
-  const stopAll = () => {
-    Object.keys(loopSourcesRef.current).forEach(k => {
-      const id = Number(k);
-      try { loopSourcesRef.current[id].source.stop(); } catch {}
-      clearInterval(loopSourcesRef.current[id].interval);
-      delete loopSourcesRef.current[id];
-    });
-    Object.keys(activeSourcesRef.current).forEach(k => stopSampler(Number(k)));
-    setActivePads({});
-  };
-
-  // Toggle: press once = play, press again = stop (sample mode for all)
   const togglePad = useCallback((padId: number) => {
     if (activeSourcesRef.current[padId]) {
       stopSampler(padId);
@@ -127,31 +246,33 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     }
   }, [playSampler, stopSampler]);
 
-  // Handle keyboard triggers (only on key down -> toggle)
+  const stopAll = useCallback(() => {
+    Object.keys(activeSourcesRef.current).forEach(k => stopSampler(Number(k)));
+    setActivePads({});
+  }, [stopSampler]);
+
+  // Keyboard triggers
   useEffect(() => {
     if (!padTrigger) return;
     if (padTrigger.type === 'down') togglePad(padTrigger.padId);
   }, [padTrigger]); // eslint-disable-line
 
-  const handlePadClick = (padId: number) => {
-    togglePad(padId);
-  };
-
-  const openConfig = (padId: number) => {
-    const pad = padConfigs.find(p => p.id === padId);
+  const openConfig = useCallback((padId: number) => {
+    const pad = padConfigsRef.current.find(p => p.id === padId);
     if (pad) {
       setEditName(pad.name);
       setUrlInput(pad.audioUrl || '');
     }
     setConfigPadId(padId);
-  };
+  }, []);
 
   const saveConfig = () => {
     if (configPadId === null) return;
+    const current = padConfigsRef.current.find(p => p.id === configPadId);
     setPadConfigs(prev => prev.map(p =>
       p.id === configPadId ? { ...p, name: editName || p.name } : p
     ));
-    if (urlInput && urlInput !== padConfigs.find(p => p.id === configPadId)?.audioUrl) {
+    if (urlInput && urlInput !== current?.audioUrl) {
       setPadConfigs(prev => prev.map(p =>
         p.id === configPadId ? { ...p, audioUrl: urlInput, fileName: undefined } : p
       ));
@@ -159,6 +280,11 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     }
     setConfigPadId(null);
   };
+
+  // Commit-only persistence (called on slider drag end)
+  const commitPadPatch = useCallback((id: number, patch: Partial<PadCfg>) => {
+    setPadConfigs(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+  }, [setPadConfigs]);
 
   const configPad = configPadId !== null ? padConfigs.find(p => p.id === configPadId) : null;
 
@@ -171,33 +297,19 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
         </Button>
       </div>
 
-      {/* 5 Pads - responsive grid with max size */}
+      {/* 5 Pads */}
       <div className="flex justify-center gap-1.5 sm:gap-2">
-        {padConfigs.map((pad, i) => {
-          const isActive = !!activePads[pad.id];
-          return (
-            <div key={pad.id} className="relative flex flex-col items-center gap-0.5 sm:gap-1 w-16 sm:w-20 md:w-24 max-w-[100px]">
-              <button
-                onClick={() => handlePadClick(pad.id)}
-                onTouchStart={(e) => { e.preventDefault(); handlePadClick(pad.id); }}
-                className={cn(
-                  `w-full aspect-square bg-gradient-to-b border rounded-lg sm:rounded-xl flex flex-col items-center justify-center font-bold transition-all active:scale-95 active:brightness-125`,
-                  'text-[10px] sm:text-xs',
-                  padColors[i],
-                  !buffers[pad.id] && 'opacity-40',
-                  isActive && 'brightness-150 ring-2 ring-primary shadow-[0_0_18px_hsl(var(--primary)/0.55)]'
-                )}
-              >
-                <span className="truncate w-full px-0.5 sm:px-1">{pad.fileName || pad.name}</span>
-                <span className="text-[8px] sm:text-[9px] text-muted-foreground opacity-60 mt-0.5">[{i + 1}]</span>
-              </button>
-              {/* Settings icon */}
-              <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={() => openConfig(pad.id)}>
-                <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-              </Button>
-            </div>
-          );
-        })}
+        {padConfigs.map((pad, i) => (
+          <PadButton
+            key={pad.id}
+            pad={pad}
+            index={i}
+            isActive={!!activePads[pad.id]}
+            hasBuffer={!!buffers[pad.id]}
+            onTrigger={togglePad}
+            onConfig={openConfig}
+          />
+        ))}
       </div>
 
       {/* Collapsible Mixer Sampler */}
@@ -213,26 +325,19 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
         </button>
 
         {mixerOpen && (
-          <div className="space-y-1.5 p-2 animate-in slide-in-from-top-2 duration-200">
-            {padConfigs.map((pad) => (
-              <div key={pad.id} className="flex items-center gap-1.5 sm:gap-2 text-xs">
-                <span className="w-12 sm:w-14 text-muted-foreground truncate text-[10px] sm:text-xs">{pad.name}</span>
-                <Volume2 className="w-3 h-3 text-muted-foreground shrink-0" />
-                <ResettableSlider
-                  resetValue={0.8}
-                  value={[pad.volume]}
-                  onValueChange={([v]) => setPadConfigs(prev => prev.map(p => p.id === pad.id ? { ...p, volume: v } : p))}
-                  min={0} max={1} step={0.01} className="flex-1 min-w-0"
-                />
-                <span className="text-muted-foreground text-[10px] w-4 shrink-0">Pan</span>
-                <ResettableSlider
-                  resetValue={0}
-                  value={[pad.pan]}
-                  onValueChange={([v]) => setPadConfigs(prev => prev.map(p => p.id === pad.id ? { ...p, pan: v } : p))}
-                  min={-1} max={1} step={0.01} className="w-16 sm:w-20 shrink-0"
-                />
-              </div>
-            ))}
+          <div className="p-2 animate-in slide-in-from-top-2 duration-200">
+            {/* Mobile: vertical stack of rows */}
+            <div className="space-y-1.5 md:hidden">
+              {padConfigs.map((pad, i) => (
+                <MixerControl key={pad.id} pad={pad} index={i} onCommit={commitPadPatch} layout="row" />
+              ))}
+            </div>
+            {/* md+: horizontal grid, one column per pad */}
+            <div className="hidden md:grid md:grid-cols-5 gap-3">
+              {padConfigs.map((pad, i) => (
+                <MixerControl key={pad.id} pad={pad} index={i} onCommit={commitPadPatch} layout="column" />
+              ))}
+            </div>
           </div>
         )}
       </div>

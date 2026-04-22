@@ -202,7 +202,7 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     const ctx = getAudioContext();
     const mg = getMasterGain();
     const gain = ctx.createGain();
-    gain.gain.value = pad.volume;
+    gain.gain.value = pad.muted ? 0 : pad.volume;
     const panner = ctx.createStereoPanner();
     panner.pan.value = pad.pan;
     gain.connect(panner);

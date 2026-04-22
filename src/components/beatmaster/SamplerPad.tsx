@@ -319,19 +319,10 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
         </button>
 
         {mixerOpen && (
-          <div className="p-2 animate-in slide-in-from-top-2 duration-200">
-            {/* Mobile: vertical stack of rows */}
-            <div className="space-y-1.5 md:hidden">
-              {padConfigs.map((pad, i) => (
-                <MixerControl key={pad.id} pad={pad} index={i} onCommit={commitPadPatch} layout="row" />
-              ))}
-            </div>
-            {/* md+: horizontal grid, one column per pad */}
-            <div className="hidden md:grid md:grid-cols-5 gap-3">
-              {padConfigs.map((pad, i) => (
-                <MixerControl key={pad.id} pad={pad} index={i} onCommit={commitPadPatch} layout="column" />
-              ))}
-            </div>
+          <div className="p-2 sm:p-3 space-y-1.5 animate-in slide-in-from-top-2 duration-200">
+            {padConfigs.map((pad, i) => (
+              <MixerControl key={pad.id} pad={pad} index={i} onCommit={commitPadPatch} />
+            ))}
           </div>
         )}
       </div>

@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Trash2, Edit2, Check, X, Music, Coffee,
+  Trash2, Edit2, Check, X, Coffee,
   ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Play,
 } from 'lucide-react';
 import type { Song } from '@/types/beatmaster';

@@ -92,20 +92,20 @@ const Index = () => {
     const idx = activePlaylist.songs.findIndex(s => s.id === activeSongId);
     const next = idx + dir;
     if (next >= 0 && next < activePlaylist.songs.length) {
-      onSelectSong(activePlaylist.songs[next]);
+      onPlaySong(activePlaylist.songs[next]);
     }
-  }, [activePlaylist, activeSongId, mode, onSelectSong]);
+  }, [activePlaylist, activeSongId, mode, onPlaySong]);
 
   const handleSongEnd = useCallback(() => {
     if (!activePlaylist || mode !== 'setlist') return;
     const idx = activePlaylist.songs.findIndex(s => s.id === activeSongId);
     const next = idx + 1;
     if (next < activePlaylist.songs.length) {
-      onSelectSong(activePlaylist.songs[next]);
+      onPlaySong(activePlaylist.songs[next]);
     } else {
       metro.stop();
     }
-  }, [activePlaylist, activeSongId, mode, onSelectSong, metro]);
+  }, [activePlaylist, activeSongId, mode, onPlaySong, metro]);
 
   const cyclePlaylist = useCallback(() => {
     if (playlists.length <= 1) return;
@@ -192,7 +192,8 @@ const Index = () => {
               <SetlistManager
                 playlists={playlists} setPlaylists={setPlaylists}
                 activePlaylistId={activePlaylistId} setActivePlaylistId={setActivePlaylistId}
-                activeSongId={activeSongId} onSelectSong={onSelectSong}
+                activeSongId={activeSongId} selectedSongId={selectedSongId}
+                onSelectSong={onSelectSong} onPlaySong={onPlaySong}
                 currentBpm={metro.bpm} currentTimeSignature={metro.timeSignature}
               />
             </TabsContent>
@@ -224,7 +225,8 @@ const Index = () => {
               <SetlistManager
                 playlists={playlists} setPlaylists={setPlaylists}
                 activePlaylistId={activePlaylistId} setActivePlaylistId={setActivePlaylistId}
-                activeSongId={activeSongId} onSelectSong={onSelectSong}
+                activeSongId={activeSongId} selectedSongId={selectedSongId}
+                onSelectSong={onSelectSong} onPlaySong={onPlaySong}
                 currentBpm={metro.bpm} currentTimeSignature={metro.timeSignature}
               />
               <SamplerPad

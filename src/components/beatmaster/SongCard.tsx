@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import type { Song } from '@/types/beatmaster';
 import { cn } from '@/lib/utils';
+import { fetchCoverArt } from '@/lib/coverArt';
 
 const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '7/4', '9/8', '12/8', '13/8'];
 
@@ -24,12 +25,14 @@ interface Props {
   index: number;
   total: number;
   isActive: boolean;
+  isSelected?: boolean;
   isEditing: boolean;
   editForm: Partial<Song>;
   setEditForm: (s: Partial<Song>) => void;
   durationInput: string;
   setDurationInput: (v: string) => void;
   onSelect: () => void;
+  onPlay?: () => void;
   onStartEdit: () => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
@@ -38,9 +41,9 @@ interface Props {
 }
 
 const SongCard: React.FC<Props> = ({
-  song, index, total, isActive, isEditing,
+  song, index, total, isActive, isSelected, isEditing,
   editForm, setEditForm, durationInput, setDurationInput,
-  onSelect, onStartEdit, onSaveEdit, onCancelEdit, onDelete, onMove,
+  onSelect, onPlay, onStartEdit, onSaveEdit, onCancelEdit, onDelete, onMove,
 }) => {
   // Long-press for editing on mobile
   const pressTimerRef = useRef<number | null>(null);

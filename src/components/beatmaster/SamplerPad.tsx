@@ -16,12 +16,13 @@ interface SamplerPadProps {
   padTrigger?: { padId: number; type: 'down' | 'up' } | null;
 }
 
-const padColors = [
-  'from-red-500/30 to-red-700/10 border-red-500/40 hover:border-red-400',
-  'from-orange-500/30 to-orange-700/10 border-orange-500/40 hover:border-orange-400',
-  'from-yellow-500/30 to-yellow-700/10 border-yellow-500/40 hover:border-yellow-400',
-  'from-cyan-500/30 to-cyan-700/10 border-cyan-500/40 hover:border-cyan-400',
-  'from-purple-500/30 to-purple-700/10 border-purple-500/40 hover:border-purple-400',
+// MPC-style: solid resting color + solid active color (no glow, no pulse).
+const padColors: { idle: string; active: string }[] = [
+  { idle: 'bg-red-900/70 border-red-700',       active: 'bg-red-500 border-red-300' },
+  { idle: 'bg-orange-900/70 border-orange-700', active: 'bg-orange-500 border-orange-300' },
+  { idle: 'bg-yellow-900/70 border-yellow-700', active: 'bg-yellow-400 border-yellow-200' },
+  { idle: 'bg-cyan-900/70 border-cyan-700',     active: 'bg-cyan-400 border-cyan-200' },
+  { idle: 'bg-purple-900/70 border-purple-700', active: 'bg-purple-500 border-purple-300' },
 ];
 
 const padBorderColors = [
@@ -57,15 +58,14 @@ const PadButton = memo(({ pad, index, isActive, hasBuffer, onTrigger, onConfig }
       <button
         onPointerDown={handlePointerDown}
         className={cn(
-          `w-full aspect-square bg-gradient-to-b border rounded-lg sm:rounded-xl flex flex-col items-center justify-center font-bold transition-all active:scale-95 active:brightness-125 touch-none select-none`,
-          'text-[10px] sm:text-xs',
-          padColors[index],
-          !hasBuffer && 'opacity-40',
-          isActive && 'brightness-150 ring-2 ring-primary shadow-[0_0_18px_hsl(var(--primary)/0.55)]'
+          'w-full aspect-square border-2 rounded-md flex flex-col items-center justify-center font-bold transition-colors duration-75 active:translate-y-px touch-none select-none text-[10px] sm:text-xs',
+          isActive ? padColors[index].active : padColors[index].idle,
+          isActive ? 'text-black' : 'text-white/80',
+          !hasBuffer && 'opacity-40'
         )}
       >
         <span className="truncate w-full px-0.5 sm:px-1">{pad.fileName || pad.name}</span>
-        <span className="text-[8px] sm:text-[9px] text-muted-foreground opacity-60 mt-0.5">[{index + 1}]</span>
+        <span className={cn('text-[8px] sm:text-[9px] mt-0.5', isActive ? 'text-black/70' : 'text-white/50')}>[{index + 1}]</span>
       </button>
       <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={handleConfig}>
         <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3" />

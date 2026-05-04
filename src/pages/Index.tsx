@@ -30,6 +30,7 @@ const Index = () => {
   const [playlists, setPlaylists] = useLocalStorage<Playlist[]>('bm-playlists', []);
   const [activePlaylistId, setActivePlaylistId] = useLocalStorage<string | null>('bm-active-playlist', null);
   const [activeSongId, setActiveSongId] = useLocalStorage<string | null>('bm-active-song', null);
+  const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
   const [mode, setMode] = useLocalStorage<AppMode>('bm-mode', 'free');
   const [isDark, setIsDark] = useLocalStorage<boolean>('bm-dark-mode', true);
   const [skin, setSkin] = useLocalStorage<SkinColor>('bm-skin', 'purple');
@@ -73,7 +74,13 @@ const Index = () => {
   const activeSong = activePlaylist?.songs.find(s => s.id === activeSongId) || null;
 
   const onSelectSong = useCallback((song: Song) => {
+    // Só seleciona como alvo (para inserir pausa) — não interrompe o que está tocando
+    setSelectedSongId(song.id);
+  }, []);
+
+  const onPlaySong = useCallback((song: Song) => {
     setActiveSongId(song.id);
+    setSelectedSongId(song.id);
     if (mode === 'setlist') {
       metro.setBpm(song.bpm);
       metro.setTimeSignature(song.timeSignature);
@@ -85,20 +92,20 @@ const Index = () => {
     const idx = activePlaylist.songs.findIndex(s => s.id === activeSongId);
     const next = idx + dir;
     if (next >= 0 && next < activePlaylist.songs.length) {
-      onSelectSong(activePlaylist.songs[next]);
+      onPlaySong(activePlaylist.songs[next]);
     }
-  }, [activePlaylist, activeSongId, mode, onSelectSong]);
+  }, [activePlaylist, activeSongId, mode, onPlaySong]);
 
   const handleSongEnd = useCallback(() => {
     if (!activePlaylist || mode !== 'setlist') return;
     const idx = activePlaylist.songs.findIndex(s => s.id === activeSongId);
     const next = idx + 1;
     if (next < activePlaylist.songs.length) {
-      onSelectSong(activePlaylist.songs[next]);
+      onPlaySong(activePlaylist.songs[next]);
     } else {
       metro.stop();
     }
-  }, [activePlaylist, activeSongId, mode, onSelectSong, metro]);
+  }, [activePlaylist, activeSongId, mode, onPlaySong, metro]);
 
   const cyclePlaylist = useCallback(() => {
     if (playlists.length <= 1) return;
@@ -185,7 +192,8 @@ const Index = () => {
               <SetlistManager
                 playlists={playlists} setPlaylists={setPlaylists}
                 activePlaylistId={activePlaylistId} setActivePlaylistId={setActivePlaylistId}
-                activeSongId={activeSongId} onSelectSong={onSelectSong}
+                activeSongId={activeSongId} selectedSongId={selectedSongId}
+                onSelectSong={onSelectSong} onPlaySong={onPlaySong}
                 currentBpm={metro.bpm} currentTimeSignature={metro.timeSignature}
               />
             </TabsContent>
@@ -217,7 +225,8 @@ const Index = () => {
               <SetlistManager
                 playlists={playlists} setPlaylists={setPlaylists}
                 activePlaylistId={activePlaylistId} setActivePlaylistId={setActivePlaylistId}
-                activeSongId={activeSongId} onSelectSong={onSelectSong}
+                activeSongId={activeSongId} selectedSongId={selectedSongId}
+                onSelectSong={onSelectSong} onPlaySong={onPlaySong}
                 currentBpm={metro.bpm} currentTimeSignature={metro.timeSignature}
               />
               <SamplerPad

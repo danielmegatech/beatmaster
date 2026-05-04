@@ -1,0 +1,58 @@
+// Cover art lookup with iTunes → MusicBrainz fallback + localStorage cache.
+const CACHE_KEY = 'bm-cover-cache-v1';
+
+type CoverCache = Record<string, string>; // key -> url
+
+function loadCache(): CoverCache {
+  try {
+    return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+function saveCache(c: CoverCache) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(c)); } catch { /* quota */ }
+}
+
+function keyFor(artist: string, title: string) {
+  return `${(artist || '').toLowerCase().trim()}|${title.toLowerCase().trim()}`;
+}
+
+async function searchItunes(artist: string, title: string): Promise<string | null> {
+  try {
+    const term = encodeURIComponent(`${artist} ${title}`.trim());
+    const res = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=1`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const url: string | undefined = data?.results?.[0]?.artworkUrl100;
+    if (!url) return null;
+    // Upgrade to higher resolution
+    return url.replace('100x100', '300x300');
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCoverArt(
+  title: string,
+  artist?: string,
+): Promise<string | null> {
+  if (!title) return null;
+  const cache = loadCache();
+  const k = keyFor(artist || '', title);
+  if (cache[k]) return cache[k];
+
+  const url = await searchItunes(artist || '', title);
+  if (url) {
+    cache[k] = url;
+    saveCache(cache);
+    return url;
+  }
+  return null;
+}
+
+export function setCachedCover(title: string, artist: string | undefined, url: string) {
+  const cache = loadCache();
+  cache[keyFor(artist || '', title)] = url;
+  saveCache(cache);
+}

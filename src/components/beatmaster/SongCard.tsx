@@ -78,6 +78,20 @@ const SongCard: React.FC<Props> = ({
   const isFirst = index === 0;
   const isLast = index === total - 1;
 
+  // Auto-fetch cover art when not present (and not a pause).
+  const [autoCover, setAutoCover] = useState<string | null>(null);
+  useEffect(() => {
+    if (song.isPause || song.coverArt) { setAutoCover(null); return; }
+    let cancelled = false;
+    fetchCoverArt(song.name, song.artist).then(url => {
+      if (!cancelled) setAutoCover(url);
+    });
+    return () => { cancelled = true; };
+  }, [song.id, song.name, song.artist, song.coverArt, song.isPause]);
+
+  const cover = song.coverArt || autoCover;
+  const initial = (song.artist || song.name || '?').charAt(0).toUpperCase();
+
   return (
     <div
       className={cn(
@@ -86,7 +100,9 @@ const SongCard: React.FC<Props> = ({
           ? 'border-accent bg-accent/10 opacity-70'
           : isActive
             ? 'border-primary bg-primary/15 glow-purple ring-2 ring-primary/40'
-            : 'border-border bg-muted/30 hover:bg-muted/50',
+            : isSelected
+              ? 'border-white/80 bg-muted/40 ring-1 ring-white/40'
+              : 'border-border bg-muted/30 hover:bg-muted/50',
       )}
     >
       {/* Active indicator stripe */}

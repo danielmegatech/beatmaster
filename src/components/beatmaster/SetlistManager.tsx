@@ -12,7 +12,9 @@ interface SetlistManagerProps {
   activePlaylistId: string | null;
   setActivePlaylistId: (id: string | null) => void;
   activeSongId: string | null;
+  selectedSongId: string | null;
   onSelectSong: (song: Song) => void;
+  onPlaySong: (song: Song) => void;
   currentBpm: number;
   currentTimeSignature: string;
 }
@@ -33,7 +35,8 @@ function parseDuration(str: string): number | undefined {
 }
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
-  playlists, setPlaylists, activePlaylistId, setActivePlaylistId, activeSongId, onSelectSong,
+  playlists, setPlaylists, activePlaylistId, setActivePlaylistId,
+  activeSongId, selectedSongId, onSelectSong, onPlaySong,
   currentBpm, currentTimeSignature,
 }) => {
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
@@ -86,7 +89,9 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       notes: 'Pausa de 5 minutos', isPause: true, duration: 300,
     };
     const songs = [...activePlaylist.songs];
-    const idx = activeSongId ? songs.findIndex(s => s.id === activeSongId) : -1;
+    // Pausa abaixo da SELECIONADA (não da que está tocando)
+    const targetId = selectedSongId || activeSongId;
+    const idx = targetId ? songs.findIndex(s => s.id === targetId) : -1;
     if (idx >= 0) songs.splice(idx + 1, 0, pause);
     else songs.push(pause);
     updateSongs(songs);
@@ -251,12 +256,14 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 index={idx}
                 total={activePlaylist.songs.length}
                 isActive={activeSongId === song.id}
+                isSelected={selectedSongId === song.id}
                 isEditing={editingSongId === song.id}
                 editForm={editForm}
                 setEditForm={setEditForm}
                 durationInput={durationInput}
                 setDurationInput={setDurationInput}
                 onSelect={() => onSelectSong(song)}
+                onPlay={() => onPlaySong(song)}
                 onStartEdit={() => startEdit(song)}
                 onSaveEdit={saveEdit}
                 onCancelEdit={() => setEditingSongId(null)}

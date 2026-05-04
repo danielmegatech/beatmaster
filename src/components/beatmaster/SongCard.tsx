@@ -122,6 +122,15 @@ const SongCard: React.FC<Props> = ({
             </Select>
             <Input value={durationInput} onChange={e => setDurationInput(e.target.value)} placeholder="m:ss" className="h-8 text-sm" />
           </div>
+          <Input
+            value={editForm.coverArt || ''}
+            onChange={e => setEditForm({ ...editForm, coverArt: e.target.value })}
+            placeholder="URL da capa (jpg/png/gif/webp)"
+            className="h-8 text-sm"
+          />
+          {(editForm.coverArt) && (
+            <img src={editForm.coverArt} alt="" className="w-16 h-16 rounded-lg object-cover border border-border" />
+          )}
           <Textarea value={editForm.notes || ''} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Notas..." className="text-sm min-h-[40px]" />
           <div className="flex gap-1">
             <Button size="sm" onClick={onSaveEdit} className="text-xs gap-1 h-7"><Check className="w-3 h-3" /> Salvar</Button>
@@ -150,10 +159,27 @@ const SongCard: React.FC<Props> = ({
               <Coffee className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent shrink-0" />
             ) : (
               <div className={cn(
-                "w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0",
-                isActive ? "bg-primary/20" : "bg-muted/50"
+                "relative w-9 h-9 sm:w-11 sm:h-11 rounded-lg overflow-hidden shrink-0 group/cover",
+                isActive ? "ring-2 ring-primary" : "ring-1 ring-border/40"
               )}>
-                <Music className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isActive ? "text-primary" : "text-muted-foreground")} />
+                {cover ? (
+                  <img src={cover} alt="" className="w-full h-full object-cover" loading="lazy"
+                    onError={() => setAutoCover(null)} />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/40 to-accent/40 text-primary-foreground font-bold text-sm">
+                    {initial}
+                  </div>
+                )}
+                {onPlay && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onPlay(); }}
+                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/cover:opacity-100 focus:opacity-100 transition-opacity"
+                    title="Tocar agora"
+                    aria-label={`Tocar ${song.name}`}
+                  >
+                    <Play className="w-4 h-4 text-white fill-white" />
+                  </button>
+                )}
               </div>
             )}
             <div className="min-w-0 flex-1">

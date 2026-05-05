@@ -22,7 +22,8 @@ function playClick(
   timbre: SoundTimbre,
   volume: number,
   pan: number,
-  masterGain: GainNode
+  masterGain: GainNode,
+  isSubdivision: boolean = false
 ) {
   const gain = ctx.createGain();
   const panner = ctx.createStereoPanner();
@@ -30,7 +31,8 @@ function playClick(
   gain.connect(panner);
   panner.connect(masterGain);
 
-  const clickVol = isAccent ? volume : volume * 0.6;
+  // 3 níveis: acento forte (1.0) > batida normal (0.55) > subdivisão (0.28)
+  const clickVol = isAccent ? volume : isSubdivision ? volume * 0.28 : volume * 0.55;
 
   switch (timbre) {
     case 'triangle':
@@ -281,7 +283,7 @@ export function useMetronome() {
       const mainBeatIndex = Math.floor(currentBeatRef.current / subMul);
       const isAccent = mainBeatIndex === 0 && isMainBeat;
 
-      playClick(ctx, nextBeatTimeRef.current, isAccent, soundRef.current, volumeRef.current, panRef.current, mg);
+      playClick(ctx, nextBeatTimeRef.current, isAccent, soundRef.current, volumeRef.current, panRef.current, mg, !isMainBeat);
 
       // Only update visual on main beats
       if (isMainBeat) {

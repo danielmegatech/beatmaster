@@ -335,6 +335,96 @@ export const defaultPlaylists: Playlist[] = [
   ], 'Covers Variados'),
 ];
 
+// === EXERCÍCIOS POR INSTRUMENTO ===
+const EX_BAND = '🎓 Exercícios';
+
+function lvl(startBpm: number, targetBpm: number): string {
+  const diff = targetBpm - startBpm;
+  if (targetBpm >= 140 || diff >= 60) return '🔴 Avançado';
+  if (targetBpm >= 100 || diff >= 35) return '🟡 Intermediário';
+  return '🟢 Iniciante';
+}
+
+function ex(name: string, startBpm: number, targetBpm: number, ts: string, durationSec: number, extra = ''): Song {
+  const notes = `${lvl(startBpm, targetBpm)} · Progressão: ${startBpm} → ${targetBpm} BPM${extra ? ' · ' + extra : ''}`;
+  return { id: crypto.randomUUID(), name, bpm: startBpm, timeSignature: ts, notes, artist: '', duration: durationSec };
+}
+
+export const exercisePlaylists: Playlist[] = [
+  playlist('🥁 Bateria', [
+    ex('Rudimento: Single Stroke Roll', 60, 120, '4/4', 300),
+    ex('Rudimento: Double Stroke Roll', 60, 100, '4/4', 300),
+    ex('Rudimento: Paradiddle', 60, 100, '4/4', 300),
+    ex('Groove Básico Rock', 70, 110, '4/4', 240),
+    ex('Groove Funk (ghost notes)', 75, 100, '4/4', 300),
+    ex('Blast Beat Metal', 100, 180, '4/4', 180),
+    ex('Shuffle Blues', 65, 95, '12/8', 240),
+    ex('Polirritmo 3 contra 4', 60, 90, '4/4', 300),
+    ex('Doubles no bumbo', 80, 160, '4/4', 300),
+    ex('Independência mãos e pés', 60, 100, '4/4', 360),
+  ], EX_BAND),
+
+  playlist('🎹 Piano / Teclado', [
+    ex('Escalas Maiores (C, G, D)', 60, 120, '4/4', 300),
+    ex('Escalas Menores (Am, Em)', 60, 120, '4/4', 300),
+    ex('Arpejos Básicos', 60, 100, '4/4', 300),
+    ex('Acordes Tríades', 70, 110, '4/4', 240),
+    ex('Hanon Exercício 1', 60, 120, '4/4', 300),
+    ex('Hanon Exercício 2', 60, 120, '4/4', 300),
+    ex('Inversão de Acordes', 70, 100, '4/4', 300),
+    ex('Oitavas Saltadas', 60, 100, '4/4', 240),
+    ex('Tremolos', 60, 120, '4/4', 300),
+    ex('Leitura à Primeira Vista', 60, 80, '4/4', 600),
+  ], EX_BAND),
+
+  playlist('🎻 Cordas (Violino/Viola/Cello)', [
+    ex('Arco: Detaché básico', 60, 100, '4/4', 300),
+    ex('Escalas em Dó Maior', 60, 100, '4/4', 300),
+    ex('Escalas em Sol Maior', 60, 100, '4/4', 300),
+    ex('Mudança de Posição (1ª→3ª)', 50, 80, '4/4', 300),
+    ex('Spiccato', 60, 120, '4/4', 240),
+    ex('Duplas Cordas', 50, 90, '4/4', 300),
+    ex('Vibrato Contínuo', 40, 70, '4/4', 300),
+    ex('Pizzicato Rítmico', 70, 120, '4/4', 240),
+    ex('Trinos', 60, 100, '4/4', 300),
+    ex('Leitura Rítmica', 60, 90, '4/4', 480),
+  ], EX_BAND),
+
+  playlist('🎸 Guitarra / Baixo', [
+    ex('Alternate Picking', 60, 140, '4/4', 300),
+    ex('Escala Pentatônica', 60, 120, '4/4', 300),
+    ex('Power Chords', 70, 120, '4/4', 240),
+    ex('Sweep Picking', 50, 100, '4/4', 300),
+    ex('Legato (hammer-on/pull-off)', 60, 120, '4/4', 300),
+    ex('Fingerstyle Básico', 60, 100, '4/4', 300),
+    ex('Palm Mute Metal', 100, 180, '4/4', 240),
+    ex('Slap Baixo', 60, 110, '4/4', 300),
+    ex('Tapping', 60, 120, '4/4', 300),
+    ex('Improviso sobre backing', 70, 100, '4/4', 600),
+  ], EX_BAND),
+
+  playlist('🎺 Sopros', [
+    ex('Escalas Longas (notas sustentadas)', 50, 80, '4/4', 300),
+    ex('Escalas Cromáticas', 60, 100, '4/4', 300),
+    ex('Staccato', 70, 120, '4/4', 240),
+    ex('Intervalos (3ªs, 5ªs, 8ªs)', 60, 100, '4/4', 300),
+    ex('Tonguing Duplo', 80, 140, '4/4', 240),
+    ex('Slur e Legato', 60, 100, '4/4', 300),
+    ex('Flexibilidade de Embocadura', 50, 80, '4/4', 360),
+    ex('Arpejos de Dominante', 60, 100, '4/4', 300),
+    ex('Improvisação Blues', 70, 110, '4/4', 480),
+    ex('Leitura Rítmica Avançada', 60, 100, '4/4', 480),
+  ], EX_BAND),
+
+  playlist('🎙️ Canto / Voz', [
+    ex('Aquecimento: Escalas Vocais', 60, 100, '4/4', 300),
+    ex('Ritmo e Dicção', 80, 120, '4/4', 240),
+    ex('Sílabas em Tempo (bah-bah)', 70, 120, '4/4', 300),
+    ex('Respiração Diafragmática', 50, 70, '4/4', 360),
+    ex('Melisma (ornamentos vocais)', 60, 90, '4/4', 300),
+  ], EX_BAND),
+];
+
 export const defaultPadConfigs: PadConfig[] = [
   { id: 0, name: 'Kick', volume: 0.8, pan: 0, mode: 'sampler', audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/19/audio_66174c3405.mp3' },
   { id: 1, name: 'Snare', volume: 0.8, pan: 0, mode: 'sampler', audioUrl: 'https://cdn.pixabay.com/download/audio/2024/09/16/audio_57c811e0c0.mp3' },

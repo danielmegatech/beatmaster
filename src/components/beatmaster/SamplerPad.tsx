@@ -218,24 +218,31 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
     };
   }, [getAudioContext, getMasterGain]);
 
-  const stopSampler = useCallback((padId: number) => {
+  const stopSampler = useCallback((padId: number, fast = false) => {
     const active = activeSourcesRef.current[padId];
     if (active) {
       const ctx = getAudioContext();
-      active.gain.gain.setValueAtTime(active.gain.gain.value, ctx.currentTime);
-      active.gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-      setTimeout(() => {
+      if (fast) {
         try { active.source.stop(); } catch {}
-      }, 60);
+      } else {
+        active.gain.gain.setValueAtTime(active.gain.gain.value, ctx.currentTime);
+        active.gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+        try { active.source.stop(ctx.currentTime + 0.04); } catch {}
+      }
       delete activeSourcesRef.current[padId];
       setActivePads(prev => { const n = { ...prev }; delete n[padId]; return n; });
     }
   }, [getAudioContext]);
 
   const togglePad = useCallback((padId: number) => {
-    if (activeSourcesRef.current[padId]) {
-      stopSampler(padId);
+    const pad = padConfigsRef.current.find(p => p.id === padId);
+    const isLoop = pad?.mode === 'loop';
+    if (isLoop) {
+      if (activeSourcesRef.current[padId]) stopSampler(padId);
+      else playSampler(padId);
     } else {
+      // Sampler one-shot: retrigger immediately on every tap (MPC behavior)
+      if (activeSourcesRef.current[padId]) stopSampler(padId, true);
       playSampler(padId);
     }
   }, [playSampler, stopSampler]);

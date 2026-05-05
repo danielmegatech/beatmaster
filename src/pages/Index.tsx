@@ -31,7 +31,7 @@ const Index = () => {
   const [activePlaylistId, setActivePlaylistId] = useLocalStorage<string | null>('bm-active-playlist', null);
   const [activeSongId, setActiveSongId] = useLocalStorage<string | null>('bm-active-song', null);
   const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
-  const [mode, setMode] = useLocalStorage<AppMode>('bm-mode', 'free');
+  const [mode, setMode] = useLocalStorage<AppMode>('bm-mode', 'setlist');
   const [isDark, setIsDark] = useLocalStorage<boolean>('bm-dark-mode', true);
   const [skin, setSkin] = useLocalStorage<SkinColor>('bm-skin', 'purple');
   

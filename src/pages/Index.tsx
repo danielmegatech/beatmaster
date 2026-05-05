@@ -43,18 +43,26 @@ const Index = () => {
   // Seed defaults
   useEffect(() => {
     if (playlists.length === 0) {
-      setPlaylists(defaultPlaylists);
-      setActivePlaylistId(defaultPlaylists[0].id);
+      const seeded = [...defaultPlaylists, ...exercisePlaylists];
+      setPlaylists(seeded);
+      setActivePlaylistId(seeded[0].id);
     }
   }, []); // eslint-disable-line
 
-  // Migrate: ensure all playlists have a band
+  // Migrate: ensure all playlists have a band + seed exercises once
+  const [exercisesSeeded, setExercisesSeeded] = useLocalStorage<boolean>('bm-exercises-seeded-v1', false);
   useEffect(() => {
     const hasMissing = playlists.some(p => !p.band);
     if (hasMissing) {
       setPlaylists(prev => prev.map(p => p.band ? p : { ...p, band: 'Geral' }));
     }
-  }, [playlists, setPlaylists]);
+    if (!exercisesSeeded && playlists.length > 0 && !playlists.some(p => p.band === '🎓 Exercícios')) {
+      setPlaylists(prev => [...prev, ...exercisePlaylists]);
+      setExercisesSeeded(true);
+    } else if (!exercisesSeeded && playlists.some(p => p.band === '🎓 Exercícios')) {
+      setExercisesSeeded(true);
+    }
+  }, [playlists, setPlaylists, exercisesSeeded, setExercisesSeeded]);
 
   // Theme + skin
   useEffect(() => {

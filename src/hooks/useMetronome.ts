@@ -283,7 +283,7 @@ export function useMetronome() {
       const mainBeatIndex = Math.floor(currentBeatRef.current / subMul);
       const isAccent = mainBeatIndex === 0 && isMainBeat;
 
-      playClick(ctx, nextBeatTimeRef.current, isAccent, soundRef.current, volumeRef.current, panRef.current, mg);
+      playClick(ctx, nextBeatTimeRef.current, isAccent, soundRef.current, volumeRef.current, panRef.current, mg, !isMainBeat);
 
       // Only update visual on main beats
       if (isMainBeat) {

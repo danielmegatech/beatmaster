@@ -105,6 +105,14 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
       : song.artist
         ? `Now playing: ${song.name}, by ${song.artist}.`
         : `Now playing: ${song.name}.`;
+
+    // If ElevenLabs was recently marked unavailable, skip network call entirely
+    const cooldownUntil = Number(sessionStorage.getItem('bm-tts-cooldown') || 0);
+    if (Date.now() < cooldownUntil) {
+      try { await speakWithBrowser(text); } finally { setAnnouncing(false); audioRef.current = null; }
+      return;
+    }
+
     try {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
       const response = await fetch(url, {
@@ -119,22 +127,19 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
 
       const contentType = response.headers.get('Content-Type') || '';
 
-      // JSON response = error/fallback signal from edge function
-      if (contentType.includes('application/json')) {
-        const data = await response.json().catch(() => ({ fallback: true }));
-        console.warn('ElevenLabs TTS unavailable, using browser fallback:', data);
-        if (data?.fallback !== false) {
-          await speakWithBrowser(text);
-        }
-        return;
-      }
-
-      if (!response.ok) {
+      // JSON response from edge fn = unavailable / fallback signal. Silent fallback.
+      if (contentType.includes('application/json') || !response.ok) {
+        // 5-minute cooldown to avoid hammering the endpoint
+        sessionStorage.setItem('bm-tts-cooldown', String(Date.now() + 5 * 60_000));
         await speakWithBrowser(text);
         return;
       }
 
       const audioBlob = await response.blob();
+      if (!audioBlob.size) {
+        await speakWithBrowser(text);
+        return;
+      }
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
@@ -144,14 +149,16 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
         audio.onerror = () => { URL.revokeObjectURL(audioUrl); resolve(); };
         audio.play().catch(() => resolve());
       });
-    } catch (err) {
-      console.error('TTS announcement failed, falling back to browser:', err);
+    } catch {
+      // Silent fallback — network/edge issues should not surface as console errors
+      sessionStorage.setItem('bm-tts-cooldown', String(Date.now() + 5 * 60_000));
       await speakWithBrowser(text);
     } finally {
       setAnnouncing(false);
       audioRef.current = null;
     }
   }, [stopAnnouncement, speakWithBrowser]);
+
 
   // Reset on song change. Auto-announce ONLY happens when user presses play
   // (or when navigating between songs while already playing).

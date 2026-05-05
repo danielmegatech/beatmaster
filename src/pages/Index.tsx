@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Sun, Moon, Palette, HelpCircle } from 'lucide-react';
 import HelpDialog from '@/components/beatmaster/HelpDialog';
-import { defaultPlaylists } from '@/data/defaultPresets';
+import { defaultPlaylists, exercisePlaylists } from '@/data/defaultPresets';
 import type { Playlist, Song, AppMode } from '@/types/beatmaster';
 
 type SkinColor = 'purple' | 'blue' | 'green' | 'red' | 'orange';

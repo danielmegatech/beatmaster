@@ -291,6 +291,13 @@ const Index = () => {
         onSongEnd={handleSongEnd}
         ttsEnabled={ttsEnabled}
         setTtsEnabled={setTtsEnabled}
+        onCountIn={countInSeq.trigger}
+      />
+
+      <CountInOverlay
+        phase={countInSeq.phase}
+        currentNumber={countInSeq.currentNumber}
+        announcement={countInSeq.announcement}
       />
     </div>
   );

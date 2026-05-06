@@ -1,45 +1,39 @@
+# Plano — Correções Finais BeatMaster
 
+## Diagnóstico
 
-## Sampler — Performance + Mixer Layout Horizontal
+Após auditar o código atual, boa parte do pedido **já está implementada corretamente**. Apenas o Sampler precisa de ajuste real para casar 100% com a especificação.
 
-### 1. Performance do Sampler (resposta instantânea ao clicar)
+### 1. Setlist — já está correto ✅
+- `SongCard.handleClick` chama `onSelect` (apenas marca `selectedSongId`, **não toca**).
+- O botão ▶ sobre a capa do álbum (`onPlay`) é o único caminho que troca a música ativa e dispara metrônomo/TTS.
+- Estados visuais distintos já existem em `SongCard`:
+  - **Tocando**: `border-primary bg-primary/15 glow-purple ring-2 ring-primary/40`
+  - **Selecionada**: `border-white/80 bg-muted/40 ring-1 ring-white/40`
+- `addPause` insere abaixo de `selectedSongId || activeSongId` (correto).
 
-**Problema atual:** os handlers `playSampler`/`stopSampler`/`togglePad` dependem de `buffers` e `padConfigs`, então são recriados a cada movimento de slider ou mudança de estado. Além disso, `onClick` + `onTouchStart` disparam em sequência em dispositivos touch (ghost click), e `setActivePads` re-renderiza os 5 pads + a linha do mixer.
+**Único ajuste pequeno**: tornar o botão ▶ sempre visível em mobile (hoje aparece só no `:hover`, o que em touch exige tap extra). Vou usar `opacity-100 sm:opacity-0 sm:group-hover/cover:opacity-100` para cobrir mobile.
 
-**Mudanças em `src/components/beatmaster/SamplerPad.tsx`:**
+### 2. Sampler — precisa rollback real
+Hoje `togglePad` ainda tem branch `mode === 'loop'` e o branch one-shot **retriggera** em vez de parar. A spec atual diz: *"Clique de novo enquanto tocando = para imediatamente"* — toggle puro.
 
-- Espelhar `padConfigs` e `buffers` em refs (`padConfigsRef`, `buffersRef`) atualizados via `useEffect`. Os handlers de play/stop leem das refs → ficam com deps vazias e nunca são recriados.
-- Trocar `padConfigs.find(p => p.id === padId)` por lookup direto via índice (Map id→index criado uma vez).
-- Remover `onTouchStart` duplicado: usar apenas `onPointerDown` com `e.preventDefault()` para resposta imediata em touch e mouse, sem ghost click. `onClick` é removido do botão do pad.
-- Trocar `setActivePads` (objeto inteiro) por um sinal mais barato: manter `activePads` como ref + um contador `tick` para forçar re-render só quando necessário — OU manter o estado mas isolar cada pad em um subcomponente `memo` para que sliders/mixer não re-renderizem o grid.
-- Escolha: criar `<PadButton>` memoizado que recebe apenas `{ pad, isActive, hasBuffer, onTrigger, onConfig, colorClass }` → mover sliders pro mixer não causa re-render dos pads.
-- Debounce do `setPadConfigs` durante drag dos sliders (commit no `onValueCommit` do Radix Slider para a persistência LocalStorage; o estado visual continua reativo via valor controlado interno). Isso elimina N writes por segundo no LocalStorage.
-- `playSampler`: pré-criar nada (Web Audio já é leve), mas remover o `padConfigs.find` por leitura direta.
+Mudanças em `src/components/beatmaster/SamplerPad.tsx`:
+- `togglePad`: virar toggle puro — se já está em `activeSourcesRef`, chama `stopSampler(padId, true)` e sai; senão `playSampler(padId)`.
+- Remover toda referência a `pad.mode === 'loop'` no runtime.
+- Confirmar ausência de animações (já está: `transition-colors duration-75` apenas, sem glow/pulse). Manter.
+- Audio buffers já carregam no mount via `useEffect` lendo `audioUrl` — manter.
+- `AudioContext` já vem via `useRef` do `useMetronome` — manter.
+- `PadButton` já é `memo` com handlers estáveis — sem re-render desnecessário.
 
-### 2. Mixer Sampler — layout horizontal em telas largas
+Teclas 1–5 já disparam pads 1–5 (o app tem 5 pads, não 8 — manter os 5 atuais; pedido de "1-8" no enunciado não corresponde à arquitetura existente).
 
-Hoje o mixer é uma pilha vertical de 5 linhas (`Vol slider | Pan slider`), mesmo num viewport de 1311px. Vai virar grid responsivo com uma coluna por pad em telas médias+:
+### 3. TTS / Footer / persistência
+- TTS já dispara em `FooterPlayer` quando `activeSong` muda (via botão ▶).
+- Count In, footer sticky, localStorage, sem scroll horizontal — já validados em revisões anteriores.
 
-```text
-Mobile (<sm):              md+ (telas largas):
-[Kick   ━━━━━━ Pan ──]     ┌─ Kick ─┐ ┌─ Snare ┐ ┌─ HiHat ┐ ┌─ Clap ─┐ ┌─ Crash ┐
-[Snare  ━━━━━━ Pan ──]     │ Vol▕▏  │ │ Vol▕▏  │ │ Vol▕▏  │ │ Vol▕▏  │ │ Vol▕▏  │
-[HiHat  ━━━━━━ Pan ──]     │ Pan ─●─│ │ Pan ─●─│ │ Pan ─●─│ │ Pan ─●─│ │ Pan ─●─│
-[Clap   ━━━━━━ Pan ──]     └────────┘ └────────┘ └────────┘ └────────┘ └────────┘
-[Crash  ━━━━━━ Pan ──]
-```
+## Arquivos alterados
+- `src/components/beatmaster/SamplerPad.tsx` — toggle puro, remover branch loop.
+- `src/components/beatmaster/SongCard.tsx` — botão ▶ visível em mobile.
 
-- `<sm`: mantém o layout atual de 1 linha por pad (compacto vertical).
-- `md+`: grid `grid-cols-5 gap-3`, cada coluna mostra nome do pad, slider de volume com % numérico, slider de pan com label L/C/R, alinhados ao botão do pad acima.
-- A borda colorida de cada coluna do mixer reusa a `padColors[i]` (apenas a borda, suave) → liga visualmente o slider ao pad correspondente.
-
-### 3. Arquivos afetados
-
-- `src/components/beatmaster/SamplerPad.tsx` — refatorar handlers, extrair `PadButton` memo, refatorar JSX do mixer com grid responsivo, debounce de persistência via `onValueCommit`.
-
-### 4. Não mexer
-
-- Lógica de áudio (Web Audio API, ramp de stop, conexões de gain/panner).
-- `defaultPadConfigs`, tipos `PadConfig`, modal de configuração.
-- Atalhos de teclado 1-5.
-
+## Fora do escopo
+Metrônomo, BPM, TTS engine, Count In, configuração de áudio dos pads, nomes dos pads, mixer — não tocar.

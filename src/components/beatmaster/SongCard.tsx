@@ -173,7 +173,7 @@ const SongCard: React.FC<Props> = ({
                 {onPlay && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onPlay(); }}
-                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/cover:opacity-100 focus:opacity-100 transition-opacity"
+                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-100 sm:opacity-0 sm:group-hover/cover:opacity-100 focus:opacity-100 transition-opacity"
                     title="Tocar agora"
                     aria-label={`Tocar ${song.name}`}
                   >

@@ -235,14 +235,10 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
   }, [getAudioContext]);
 
   const togglePad = useCallback((padId: number) => {
-    const pad = padConfigsRef.current.find(p => p.id === padId);
-    const isLoop = pad?.mode === 'loop';
-    if (isLoop) {
-      if (activeSourcesRef.current[padId]) stopSampler(padId);
-      else playSampler(padId);
+    // MPC toggle puro: tocando → para; parado → toca
+    if (activeSourcesRef.current[padId]) {
+      stopSampler(padId, true);
     } else {
-      // Sampler one-shot: retrigger immediately on every tap (MPC behavior)
-      if (activeSourcesRef.current[padId]) stopSampler(padId, true);
       playSampler(padId);
     }
   }, [playSampler, stopSampler]);

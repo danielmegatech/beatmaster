@@ -28,6 +28,7 @@ interface MetronomeProps {
   countIn: boolean;
   setCountIn: (v: boolean) => void;
   isCountingIn: boolean;
+  onCountIn?: () => void;
 }
 
 const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '7/4', '9/8', '12/8', '13/8'];
@@ -142,7 +143,7 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
     subdivision, setSubdivision, sound, setSound,
     volume, setVolume, pan, setPan,
     currentBeat, beatsPerMeasure, toggle, tapTempo,
-    countIn, setCountIn, isCountingIn,
+    countIn, setCountIn, isCountingIn, onCountIn,
   } = props;
 
   return (
@@ -151,14 +152,14 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
       <div className="flex items-center justify-between">
         <h2 className="text-base sm:text-lg font-semibold text-primary">🥁 Metrônomo</h2>
         <Button
-          variant={countIn ? 'default' : 'outline'}
+          variant="outline"
           size="sm"
-          onClick={() => setCountIn(!countIn)}
-          className="text-xs h-8 gap-1 transition-all"
-          title="Count-in: conta o compasso antes de iniciar"
+          onClick={() => onCountIn?.()}
+          className="text-xs h-8 gap-1 transition-all border-accent/60 text-accent hover:bg-accent/10"
+          title="Count In: anuncia a música e conta 1-2-3-4 antes do metrônomo"
         >
           <Timer className="w-3.5 h-3.5" />
-          {countIn ? 'Count ✓' : 'Count'}
+          Count In
         </Button>
       </div>
 

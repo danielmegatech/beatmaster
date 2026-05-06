@@ -25,6 +25,7 @@ interface FooterPlayerProps {
   onSongEnd?: () => void;
   ttsEnabled: boolean;
   setTtsEnabled: (v: boolean) => void;
+  onCountIn?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -43,7 +44,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
   masterVolume, setMasterVolume, pan, setPan,
   mode, setMode, activeSong, onPrev, onNext,
   countIn, setCountIn, onSongEnd,
-  ttsEnabled, setTtsEnabled,
+  ttsEnabled, setTtsEnabled, onCountIn,
 }) => {
   const [elapsed, setElapsed] = useState(0);
   const [phase, setPhase] = useState<Phase>('idle');
@@ -427,11 +428,11 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
           {/* Count-in + TTS toggle */}
           <div className="hidden md:flex items-center gap-1">
             <Button
-              variant={countIn ? 'default' : 'outline'}
+              variant="outline"
               size="sm"
-              onClick={() => setCountIn(!countIn)}
-              className="text-[10px] h-7 gap-1 px-2 transition-all"
-              title="Count-in: 2 compassos antes de iniciar"
+              onClick={() => onCountIn?.()}
+              className="text-[10px] h-7 gap-1 px-2 transition-all border-accent/60 text-accent hover:bg-accent/10"
+              title="Count In: anuncia a música e conta 1-2-3-4 antes do metrônomo"
             >
               <Timer className="w-3 h-3" /> Count In
             </Button>

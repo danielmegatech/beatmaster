@@ -28,7 +28,6 @@ interface MetronomeProps {
   countIn: boolean;
   setCountIn: (v: boolean) => void;
   isCountingIn: boolean;
-  onCountIn?: () => void;
 }
 
 const timeSignatures = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '7/4', '9/8', '12/8', '13/8'];
@@ -143,23 +142,28 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
     subdivision, setSubdivision, sound, setSound,
     volume, setVolume, pan, setPan,
     currentBeat, beatsPerMeasure, toggle, tapTempo,
-    countIn, setCountIn, isCountingIn, onCountIn,
+    countIn, setCountIn, isCountingIn,
   } = props;
 
   return (
     <div className="glass rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5">
-      {/* Header with play button */}
+      {/* Header with Count In toggle */}
       <div className="flex items-center justify-between">
         <h2 className="text-base sm:text-lg font-semibold text-primary">🥁 Metrônomo</h2>
         <Button
-          variant="outline"
+          variant={countIn ? 'default' : 'outline'}
           size="sm"
-          onClick={() => onCountIn?.()}
-          className="text-xs h-8 gap-1 transition-all border-accent/60 text-accent hover:bg-accent/10"
-          title="Count In: anuncia a música e conta 1-2-3-4 antes do metrônomo"
+          onClick={() => setCountIn(!countIn)}
+          className={cn(
+            "text-xs h-8 gap-1 transition-all",
+            countIn
+              ? "bg-accent text-accent-foreground hover:bg-accent/90 border-accent"
+              : "border-accent/60 text-accent hover:bg-accent/10"
+          )}
+          title="Count In: anuncia a música e conta 1-2-3-4 antes do metrônomo. Aplicado ao iniciar/trocar de música."
         >
           <Timer className="w-3.5 h-3.5" />
-          Count In
+          Count In {countIn ? 'ON' : 'OFF'}
         </Button>
       </div>
 

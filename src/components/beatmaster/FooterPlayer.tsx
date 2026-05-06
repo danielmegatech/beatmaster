@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, SkipBack, SkipForward, Timer, Mic, MicOff } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Mic, MicOff } from 'lucide-react';
 import BeatIndicator from './BeatIndicator';
 import type { Song, AppMode } from '@/types/beatmaster';
 import { cn } from '@/lib/utils';
@@ -25,7 +25,6 @@ interface FooterPlayerProps {
   onSongEnd?: () => void;
   ttsEnabled: boolean;
   setTtsEnabled: (v: boolean) => void;
-  onCountIn?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -44,7 +43,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
   masterVolume, setMasterVolume, pan, setPan,
   mode, setMode, activeSong, onPrev, onNext,
   countIn, setCountIn, onSongEnd,
-  ttsEnabled, setTtsEnabled, onCountIn,
+  ttsEnabled, setTtsEnabled,
 }) => {
   const [elapsed, setElapsed] = useState(0);
   const [phase, setPhase] = useState<Phase>('idle');
@@ -425,17 +424,8 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
             <span className="text-sm tabular-nums font-semibold text-foreground">{bpm}</span>
           </div>
 
-          {/* Count-in + TTS toggle */}
+          {/* TTS toggle */}
           <div className="hidden md:flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onCountIn?.()}
-              className="text-[10px] h-7 gap-1 px-2 transition-all border-accent/60 text-accent hover:bg-accent/10"
-              title="Count In: anuncia a música e conta 1-2-3-4 antes do metrônomo"
-            >
-              <Timer className="w-3 h-3" /> Count In
-            </Button>
             <Button
               variant={ttsEnabled ? 'default' : 'outline'}
               size="sm"
@@ -444,7 +434,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
                 "text-[10px] h-7 gap-1 px-2 transition-all",
                 announcing && "border-primary bg-primary/20"
               )}
-              title={ttsEnabled ? "Anúncio por voz ativado (toca antes de cada música)" : "Anúncio por voz desativado"}
+              title={ttsEnabled ? "Anúncio por voz ativado (aplica ao trocar/iniciar música)" : "Anúncio por voz desativado"}
             >
               {ttsEnabled ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
               TTS

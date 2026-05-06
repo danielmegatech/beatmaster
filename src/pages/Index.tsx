@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Sun, Moon, Palette, HelpCircle } from 'lucide-react';
 import HelpDialog from '@/components/beatmaster/HelpDialog';
 import { defaultPlaylists, exercisePlaylists } from '@/data/defaultPresets';
+import CountInOverlay from '@/components/beatmaster/CountInOverlay';
+import { useCountInSequence } from '@/hooks/useCountInSequence';
 import type { Playlist, Song, AppMode } from '@/types/beatmaster';
 
 type SkinColor = 'purple' | 'blue' | 'green' | 'red' | 'orange';
@@ -80,6 +82,27 @@ const Index = () => {
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || null;
   const activeSong = activePlaylist?.songs.find(s => s.id === activeSongId) || null;
+
+  const countInSeq = useCountInSequence({
+    metro: {
+      isPlaying: metro.isPlaying,
+      bpm: metro.bpm,
+      start: metro.start,
+      stop: metro.stop,
+      setBpm: metro.setBpm,
+      setTimeSignature: metro.setTimeSignature,
+      setCountIn: metro.setCountIn,
+    },
+    mode,
+    activeSong,
+    ttsEnabled,
+  });
+
+  // If user stops metronome (or it stops naturally), cancel any in-flight sequence
+  useEffect(() => {
+    if (!metro.isPlaying && countInSeq.isActive === false) return;
+    if (!metro.isPlaying) countInSeq.cancel();
+  }, [metro.isPlaying]); // eslint-disable-line
 
   const onSelectSong = useCallback((song: Song) => {
     // Só seleciona como alvo (para inserir pausa) — não interrompe o que está tocando
@@ -227,6 +250,7 @@ const Index = () => {
                 toggle={metro.toggle} tapTempo={metro.tapTempo}
                 countIn={metro.countIn} setCountIn={metro.setCountIn}
                 isCountingIn={metro.isCountingIn}
+                onCountIn={countInSeq.trigger}
               />
             </div>
             <div className="space-y-3 sm:space-y-4 min-w-0">
@@ -267,6 +291,13 @@ const Index = () => {
         onSongEnd={handleSongEnd}
         ttsEnabled={ttsEnabled}
         setTtsEnabled={setTtsEnabled}
+        onCountIn={countInSeq.trigger}
+      />
+
+      <CountInOverlay
+        phase={countInSeq.phase}
+        currentNumber={countInSeq.currentNumber}
+        announcement={countInSeq.announcement}
       />
     </div>
   );

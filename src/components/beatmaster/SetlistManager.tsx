@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Plus, Trash2, Download, Upload, Clock, Coffee } from 'lucide-react';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Plus, Trash2, Download, Upload, Clock, Coffee, Pencil, Check, X,
+  ChevronUp, ChevronDown,
+} from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import type { Song, Playlist } from '@/types/beatmaster';
 import SongCard from './SongCard';
@@ -35,6 +44,11 @@ function parseDuration(str: string): number | undefined {
   return isNaN(n) ? undefined : n;
 }
 
+// Normalize for dedupe comparison
+function songKey(s: { name?: string; artist?: string }): string {
+  return `${(s.name || '').trim().toLowerCase()}::${(s.artist || '').trim().toLowerCase()}`;
+}
+
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   playlists, setPlaylists, activePlaylistId, setActivePlaylistId,
   activeSongId, selectedSongId, onSelectSong, onPlaySong,
@@ -44,13 +58,14 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   const [editForm, setEditForm] = useState<Partial<Song>>({});
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [durationInput, setDurationInput] = useState('');
-
-  const visiblePlaylists = playlists;
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showNewInput, setShowNewInput] = useState(false);
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || null;
-
+  const activeIdx = playlists.findIndex(p => p.id === activePlaylistId);
   const filteredSongs = activePlaylist?.songs || [];
-
   const totalDuration = activePlaylist?.songs.reduce((acc, s) => acc + (s.duration || 0), 0) || 0;
 
   const addPlaylist = () => {
@@ -59,14 +74,41 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     setPlaylists(prev => [...prev, pl]);
     setActivePlaylistId(pl.id);
     setNewPlaylistName('');
+    setShowNewInput(false);
   };
 
-  const deletePlaylist = (id: string) => {
-    setPlaylists(prev => prev.filter(p => p.id !== id));
-    if (activePlaylistId === id) {
-      const remaining = visiblePlaylists.filter(p => p.id !== id);
-      setActivePlaylistId(remaining[0]?.id || null);
-    }
+  const deletePlaylist = () => {
+    if (!activePlaylistId) return;
+    const remaining = playlists.filter(p => p.id !== activePlaylistId);
+    setPlaylists(prev => prev.filter(p => p.id !== activePlaylistId));
+    setActivePlaylistId(remaining[0]?.id || null);
+    setConfirmDelete(false);
+    toast({ title: 'Setlist removida', description: activePlaylist?.name });
+  };
+
+  const startRename = () => {
+    if (!activePlaylist) return;
+    setRenameValue(activePlaylist.name);
+    setRenaming(true);
+  };
+
+  const saveRename = () => {
+    const name = renameValue.trim();
+    if (!name || !activePlaylistId) { setRenaming(false); return; }
+    setPlaylists(prev => prev.map(p => p.id === activePlaylistId ? { ...p, name } : p));
+    setRenaming(false);
+  };
+
+  const movePlaylist = (dir: -1 | 1) => {
+    if (activeIdx < 0) return;
+    const newIdx = activeIdx + dir;
+    if (newIdx < 0 || newIdx >= playlists.length) return;
+    setPlaylists(prev => {
+      const arr = [...prev];
+      const [item] = arr.splice(activeIdx, 1);
+      arr.splice(newIdx, 0, item);
+      return arr;
+    });
   };
 
   const updateSongs = (songs: Song[]) => {
@@ -75,9 +117,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
 
   const addSong = () => {
     if (!activePlaylist) return;
-    // Espelha o BPM/compasso atual do metrônomo (útil após Tap Tempo)
     const song: Song = { id: crypto.randomUUID(), name: 'Nova Música', bpm: currentBpm || 120, timeSignature: currentTimeSignature || '4/4', notes: '', artist: '' };
-    // Nova música vai para o TOPO da playlist
     updateSongs([song, ...activePlaylist.songs]);
     setEditingSongId(song.id);
     setEditForm(song);
@@ -91,7 +131,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       notes: 'Pausa de 5 minutos', isPause: true, duration: 300,
     };
     const songs = [...activePlaylist.songs];
-    // Pausa abaixo da SELECIONADA (não da que está tocando)
     const targetId = selectedSongId || activeSongId;
     const idx = targetId ? songs.findIndex(s => s.id === targetId) : -1;
     if (idx >= 0) songs.splice(idx + 1, 0, pause);
@@ -161,33 +200,90 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     const XLSX = await import('xlsx');
     const data = await file.arrayBuffer();
     const wb = XLSX.read(data);
+
+    // Build dedupe set from ALL existing songs
+    const existingKeys = new Set<string>();
+    for (const pl of playlists) for (const s of pl.songs) existingKeys.add(songKey(s));
+
     const newPlaylists: Playlist[] = [];
     let totalSongs = 0;
+    let skippedDupes = 0;
+    let invalidSheets = 0;
+    const REQUIRED = ['Nome', 'name', 'Name'];
+
     for (const sheetName of wb.SheetNames) {
       const ws = wb.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json<any>(ws);
-      const songs: Song[] = rows.map((r: any) => ({
-        id: crypto.randomUUID(),
-        name: r.Nome || r.name || r.Name || 'Sem nome',
-        artist: r.Artista || r.artist || r.Artist || '',
-        bpm: Number(r.BPM || r.bpm) || 120,
-        timeSignature: r.Compasso || r.timeSignature || r['Time Signature'] || '4/4',
-        duration: r['Duração'] ? parseDuration(String(r['Duração'])) : undefined,
-        notes: r.Notas || r.notes || r.Notes || '',
-        isPause: (r.Pausa === 'Sim' || r.isPause === true) ? true : undefined,
-      }));
+      if (rows.length === 0) continue;
+
+      // Validate required column "Nome"
+      const firstRow = rows[0];
+      const hasName = REQUIRED.some(k => k in firstRow);
+      if (!hasName) {
+        invalidSheets++;
+        continue;
+      }
+
+      const seenInSheet = new Set<string>();
+      const songs: Song[] = [];
+
+      for (const r of rows) {
+        const name = (r.Nome || r.name || r.Name || '').toString().trim();
+        if (!name) continue;
+        const artist = (r.Artista || r.artist || r.Artist || '').toString().trim();
+        const baseKey = songKey({ name, artist });
+
+        let finalName = name;
+        let key = baseKey;
+        // Dedupe: if duplicate, suggest related variant ("(v2)", "(v3)"…)
+        if (existingKeys.has(key) || seenInSheet.has(key)) {
+          let n = 2;
+          while (existingKeys.has(songKey({ name: `${name} (v${n})`, artist })) ||
+                 seenInSheet.has(songKey({ name: `${name} (v${n})`, artist }))) {
+            n++;
+          }
+          finalName = `${name} (v${n})`;
+          key = songKey({ name: finalName, artist });
+          skippedDupes++;
+        }
+
+        seenInSheet.add(key);
+        existingKeys.add(key);
+
+        songs.push({
+          id: crypto.randomUUID(),
+          name: finalName,
+          artist,
+          bpm: Number(r.BPM || r.bpm) || 120,
+          timeSignature: r.Compasso || r.timeSignature || r['Time Signature'] || '4/4',
+          duration: r['Duração'] ? parseDuration(String(r['Duração'])) : undefined,
+          notes: r.Notas || r.notes || r.Notes || '',
+          isPause: (r.Pausa === 'Sim' || r.isPause === true) ? true : undefined,
+        });
+      }
+
       const band = rows[0]?.Banda || rows[0]?.band || 'Geral';
       if (songs.length > 0) {
         newPlaylists.push({ id: crypto.randomUUID(), name: sheetName, songs, band });
         totalSongs += songs.length;
       }
     }
+
     if (newPlaylists.length > 0) {
       setPlaylists(prev => [...prev, ...newPlaylists]);
       setActivePlaylistId(newPlaylists[0].id);
-      toast({ title: 'Import concluído', description: `${totalSongs} músicas importadas em ${newPlaylists.length} setlist(s).` });
+      const parts = [`${totalSongs} músicas em ${newPlaylists.length} setlist(s)`];
+      if (skippedDupes > 0) parts.push(`${skippedDupes} duplicatas renomeadas`);
+      if (invalidSheets > 0) parts.push(`${invalidSheets} aba(s) ignorada(s) (sem coluna "Nome")`);
+      toast({ title: 'Import concluído', description: parts.join(' · ') });
     } else {
-      toast({ title: 'Nada importado', description: 'O arquivo não continha músicas válidas.', variant: 'destructive' });
+      toast({
+        title: 'Nada importado',
+        description: invalidSheets > 0
+          ? `Arquivo sem coluna obrigatória "Nome" em ${invalidSheets} aba(s).`
+          : 'O arquivo não continha músicas válidas.',
+        variant: 'destructive',
+      });
     }
     e.target.value = '';
   };
@@ -203,37 +299,98 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
         )}
       </div>
 
-      {/* Playlist tabs */}
-      <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex gap-1.5 sm:gap-2 items-center pb-3 min-w-max">
-          {visiblePlaylists.map(pl => (
-            <div key={pl.id} className="flex items-center gap-0.5 shrink-0">
-              <Button
-                variant={activePlaylistId === pl.id ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActivePlaylistId(pl.id)}
-                className="text-xs h-8 px-3"
-              >
-                {pl.name}
-              </Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => deletePlaylist(pl.id)}>
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
-          ))}
-          <div className="flex gap-1 shrink-0">
+      {/* Playlist selector: dropdown + actions */}
+      <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap min-w-0">
+        {renaming ? (
+          <>
             <Input
-              placeholder="Nova setlist..."
-              value={newPlaylistName}
-              onChange={e => setNewPlaylistName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPlaylist(); } }}
-              className="h-8 w-28 text-xs"
+              autoFocus
+              value={renameValue}
+              onChange={e => setRenameValue(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); saveRename(); }
+                if (e.key === 'Escape') { e.preventDefault(); setRenaming(false); }
+              }}
+              className="h-9 flex-1 min-w-0 text-sm"
             />
-            <Button size="icon" variant="outline" className="h-8 w-8" onClick={addPlaylist}><Plus className="w-3 h-3" /></Button>
-          </div>
+            <Button size="icon" variant="default" className="h-9 w-9 shrink-0" onClick={saveRename} title="Salvar">
+              <Check className="w-4 h-4" />
+            </Button>
+            <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => setRenaming(false)} title="Cancelar">
+              <X className="w-4 h-4" />
+            </Button>
+          </>
+        ) : (
+          <>
+            <Select
+              value={activePlaylistId || undefined}
+              onValueChange={(v) => setActivePlaylistId(v)}
+            >
+              <SelectTrigger className="h-9 flex-1 min-w-0 text-sm">
+                <SelectValue placeholder="Selecione uma setlist" />
+              </SelectTrigger>
+              <SelectContent>
+                {playlists.map(pl => (
+                  <SelectItem key={pl.id} value={pl.id}>
+                    {pl.name}{pl.songs.length > 0 ? ` · ${pl.songs.length}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="icon" variant="outline" className="h-9 w-9 shrink-0"
+              disabled={!activePlaylist} onClick={startRename} title="Renomear setlist"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              size="icon" variant="outline" className="h-9 w-9 shrink-0"
+              disabled={activeIdx <= 0} onClick={() => movePlaylist(-1)} title="Mover acima"
+            >
+              <ChevronUp className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              size="icon" variant="outline" className="h-9 w-9 shrink-0"
+              disabled={activeIdx < 0 || activeIdx >= playlists.length - 1}
+              onClick={() => movePlaylist(1)} title="Mover abaixo"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              size="icon" variant="outline" className="h-9 w-9 shrink-0 text-destructive hover:bg-destructive/10"
+              disabled={!activePlaylist} onClick={() => setConfirmDelete(true)} title="Excluir setlist"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              size="icon" variant="default" className="h-9 w-9 shrink-0"
+              onClick={() => setShowNewInput(v => !v)} title="Nova setlist"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </Button>
+          </>
+        )}
+      </div>
+
+      {showNewInput && !renaming && (
+        <div className="flex items-center gap-1.5">
+          <Input
+            autoFocus
+            placeholder="Nome da nova setlist…"
+            value={newPlaylistName}
+            onChange={e => setNewPlaylistName(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); addPlaylist(); }
+              if (e.key === 'Escape') { setShowNewInput(false); setNewPlaylistName(''); }
+            }}
+            className="h-9 flex-1 text-sm"
+          />
+          <Button size="sm" onClick={addPlaylist} className="h-9">Criar</Button>
+          <Button size="sm" variant="outline" onClick={() => { setShowNewInput(false); setNewPlaylistName(''); }} className="h-9">
+            Cancelar
+          </Button>
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      )}
 
       {/* Action buttons + import/export */}
       {activePlaylist && (
@@ -292,6 +449,24 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
           Crie ou selecione uma setlist para começar.
         </div>
       )}
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir setlist?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{activePlaylist?.name}</strong>?
+              Esta ação removerá {activePlaylist?.songs.length || 0} música(s) e não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={deletePlaylist} className="bg-destructive hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

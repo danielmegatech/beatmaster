@@ -147,7 +147,12 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       const ws = XLSX.utils.json_to_sheet(data);
       XLSX.utils.book_append_sheet(wb, ws, pl.name.substring(0, 31));
     }
-    XLSX.writeFile(wb, 'BeatMaster_Setlists.xlsx');
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    XLSX.writeFile(wb, `BeatMaster_Setlists_${dd}-${mm}-${yyyy}.xlsx`);
+    toast({ title: 'Export concluído', description: `${playlists.length} setlists exportadas.` });
   };
 
   const importXlsx = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,6 +162,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     const data = await file.arrayBuffer();
     const wb = XLSX.read(data);
     const newPlaylists: Playlist[] = [];
+    let totalSongs = 0;
     for (const sheetName of wb.SheetNames) {
       const ws = wb.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json<any>(ws);
@@ -173,11 +179,15 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       const band = rows[0]?.Banda || rows[0]?.band || 'Geral';
       if (songs.length > 0) {
         newPlaylists.push({ id: crypto.randomUUID(), name: sheetName, songs, band });
+        totalSongs += songs.length;
       }
     }
     if (newPlaylists.length > 0) {
       setPlaylists(prev => [...prev, ...newPlaylists]);
       setActivePlaylistId(newPlaylists[0].id);
+      toast({ title: 'Import concluído', description: `${totalSongs} músicas importadas em ${newPlaylists.length} setlist(s).` });
+    } else {
+      toast({ title: 'Nada importado', description: 'O arquivo não continha músicas válidas.', variant: 'destructive' });
     }
     e.target.value = '';
   };

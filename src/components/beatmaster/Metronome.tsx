@@ -261,7 +261,13 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
           <div>
             <label className="text-[10px] sm:text-xs text-muted-foreground mb-1 flex items-center justify-between">
               <span>Volume</span>
-              <span className="text-[9px] sm:text-[10px] tabular-nums text-foreground/80">{Math.round(volume * 100)}%</span>
+              <span
+                className="text-[9px] sm:text-[10px] tabular-nums text-foreground/80 cursor-pointer hover:text-primary transition-colors"
+                title="Duplo clique para 80%"
+                onDoubleClick={() => setVolume(0.8)}
+              >
+                🔊 {Math.round(volume * 100)}%
+              </span>
             </label>
             <ResettableSlider resetValue={0.8} value={[volume]} onValueChange={([v]) => setVolume(v)} min={0} max={1} step={0.01} />
           </div>

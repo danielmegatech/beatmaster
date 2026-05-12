@@ -33,6 +33,12 @@ async function searchItunes(artist: string, title: string): Promise<string | nul
   }
 }
 
+// Deterministic picsum fallback so each song still gets a unique-looking cover.
+function picsumFallback(title: string, artist?: string): string {
+  const seed = encodeURIComponent(`${(artist || '').toLowerCase()}-${title.toLowerCase()}`.slice(0, 60) || 'song');
+  return `https://picsum.photos/seed/${seed}/300/300`;
+}
+
 export async function fetchCoverArt(
   title: string,
   artist?: string,
@@ -48,7 +54,11 @@ export async function fetchCoverArt(
     saveCache(cache);
     return url;
   }
-  return null;
+  // Fallback: deterministic placeholder cover (cached)
+  const fallback = picsumFallback(title, artist);
+  cache[k] = fallback;
+  saveCache(cache);
+  return fallback;
 }
 
 export function setCachedCover(title: string, artist: string | undefined, url: string) {

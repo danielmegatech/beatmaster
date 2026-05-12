@@ -199,15 +199,21 @@ const Metronome: React.FC<MetronomeProps> = (props) => {
       {/* BPM Slider + Fine-tune */}
       <div className="space-y-2">
         <Slider value={[bpm]} onValueChange={([v]) => setBpm(v)} min={40} max={240} step={1} />
-        <div className="flex items-center justify-center gap-2 sm:gap-3">
-          <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setBpm(Math.max(40, bpm - 1))}>
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap">
+          <Button variant="outline" size="sm" className="h-8 px-2 text-[11px] font-bold" onClick={() => setBpm(Math.max(40, bpm - 5))} title="−5 BPM">
+            −5
+          </Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setBpm(Math.max(40, bpm - 1))}>
             <Minus className="w-3.5 h-3.5" />
           </Button>
           <Button variant="outline" onClick={tapTempo} className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm px-3 sm:px-4">
             <Hand className="w-3.5 h-3.5" /> Tap
           </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setBpm(Math.min(240, bpm + 1))}>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setBpm(Math.min(240, bpm + 1))}>
             <Plus className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 px-2 text-[11px] font-bold" onClick={() => setBpm(Math.min(240, bpm + 5))} title="+5 BPM">
+            +5
           </Button>
         </div>
       </div>

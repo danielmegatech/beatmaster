@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Plus, Trash2, Download, Upload, Clock, Coffee } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import type { Song, Playlist } from '@/types/beatmaster';
 import SongCard from './SongCard';
 

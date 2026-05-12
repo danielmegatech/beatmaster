@@ -76,7 +76,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     if (!activePlaylist) return;
     // Espelha o BPM/compasso atual do metrônomo (útil após Tap Tempo)
     const song: Song = { id: crypto.randomUUID(), name: 'Nova Música', bpm: currentBpm || 120, timeSignature: currentTimeSignature || '4/4', notes: '', artist: '' };
-    updateSongs([...activePlaylist.songs, song]);
+    // Nova música vai para o TOPO da playlist
+    updateSongs([song, ...activePlaylist.songs]);
     setEditingSongId(song.id);
     setEditForm(song);
     setDurationInput('');

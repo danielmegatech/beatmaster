@@ -235,12 +235,12 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
   }, [getAudioContext]);
 
   const togglePad = useCallback((padId: number) => {
-    // MPC toggle puro: tocando → para; parado → toca
+    // MPC fire-and-forget: cada toque corta o source anterior e dispara um novo.
+    // Garante toques rápidos sem atraso, sem fila de áudio acumulada.
     if (activeSourcesRef.current[padId]) {
       stopSampler(padId, true);
-    } else {
-      playSampler(padId);
     }
+    playSampler(padId);
   }, [playSampler, stopSampler]);
 
   const stopAll = useCallback(() => {

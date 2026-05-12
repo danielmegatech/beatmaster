@@ -48,12 +48,28 @@ const HelpDialog: React.FC<HelpDialogProps> = ({ open, onOpenChange }) => {
             <p>Funciona offline (PWA), com áudio de alta precisão via Web Audio API.</p>
           </TabsContent>
 
-          <TabsContent value="legal" className="text-sm space-y-2 pt-3 text-foreground/90">
-            <p><strong>Metadados de música:</strong> MusicBrainz (CC0).</p>
-            <p><strong>Síntese de voz:</strong> ElevenLabs.</p>
-            <p><strong>Ícones:</strong> Lucide.</p>
-            <p><strong>UI:</strong> shadcn/ui · Tailwind · React.</p>
-            <p className="text-muted-foreground text-xs pt-2">© BeatMaster · Feito com Lovable.</p>
+          <TabsContent value="legal" className="text-sm space-y-3 pt-3 text-foreground/90">
+            <div className="space-y-1">
+              <p className="text-primary font-bold">Desenvolvido por Daan.dev</p>
+              <p className="text-xs">Daniel Mega · 2026 · Lisbon, Portugal</p>
+              <p className="text-xs">
+                <a href="https://github.com/danielmegatech/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  github.com/danielmegatech
+                </a>
+              </p>
+              <p className="text-xs">
+                <a href="mailto:daniel.megatech@gmail.com" className="text-primary hover:underline">
+                  daniel.megatech@gmail.com
+                </a>
+              </p>
+            </div>
+            <div className="border-t border-border/40 pt-2 space-y-1">
+              <p><strong>Metadados de música:</strong> MusicBrainz (CC0).</p>
+              <p><strong>Síntese de voz:</strong> ElevenLabs.</p>
+              <p><strong>Ícones:</strong> Lucide.</p>
+              <p><strong>UI:</strong> shadcn/ui · Tailwind · React.</p>
+            </div>
+            <p className="text-muted-foreground text-xs pt-1">© 2026 BeatMaster · Feito com Lovable.</p>
           </TabsContent>
         </Tabs>
       </DialogContent>

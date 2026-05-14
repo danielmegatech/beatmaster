@@ -51,6 +51,7 @@ const Index = () => {
 
   // Migrate: ensure all playlists have a band + seed exercises once
   const [exercisesSeeded, setExercisesSeeded] = useLocalStorage<boolean>('bm-exercises-seeded-v1', false);
+  const [brPlaylistsSeeded, setBrPlaylistsSeeded] = useLocalStorage<boolean>('bm-br-playlists-seeded-v1', false);
   useEffect(() => {
     const hasMissing = playlists.some(p => !p.band);
     if (hasMissing) {
@@ -62,7 +63,15 @@ const Index = () => {
     } else if (!exercisesSeeded && playlists.some(p => p.band === '🎓 Exercícios')) {
       setExercisesSeeded(true);
     }
-  }, [playlists, setPlaylists, exercisesSeeded, setExercisesSeeded]);
+    if (!brPlaylistsSeeded && playlists.length > 0) {
+      const brNames = ['Samba', 'Sertanejo', 'Sertanejo Universitário'];
+      const missing = defaultPlaylists.filter(dp => brNames.includes(dp.name) && !playlists.some(p => p.name === dp.name));
+      if (missing.length > 0) {
+        setPlaylists(prev => [...prev, ...missing]);
+      }
+      setBrPlaylistsSeeded(true);
+    }
+  }, [playlists, setPlaylists, exercisesSeeded, setExercisesSeeded, brPlaylistsSeeded, setBrPlaylistsSeeded]);
 
   // Theme + skin
   useEffect(() => {

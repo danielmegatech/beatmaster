@@ -422,13 +422,6 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
           <div className="flex items-center gap-2 md:gap-3">
             <BeatIndicator beatsPerMeasure={beatsPerMeasure} currentBeat={currentBeat} compact showLabels />
             <span className="text-sm tabular-nums font-semibold text-foreground">{bpm}</span>
-            <span
-              className="text-[10px] tabular-nums text-muted-foreground border border-border/40 rounded px-1.5 py-0.5"
-              title="Volume Master (use ↑/↓ ou duplo clique para 80%)"
-              onDoubleClick={() => setMasterVolume(0.8)}
-            >
-              🔊 {Math.round(masterVolume * 100)}%
-            </span>
           </div>
 
           {/* TTS toggle */}

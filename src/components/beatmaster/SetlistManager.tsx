@@ -174,24 +174,47 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   };
 
   const exportXlsx = async () => {
-    const XLSX = await import('xlsx');
-    const wb = XLSX.utils.book_new();
-    for (const pl of playlists) {
-      const data = pl.songs.map((s, i) => ({
-        '#': i + 1, Banda: pl.band || 'Geral', Nome: s.name, Artista: s.artist || '',
-        BPM: s.bpm, Compasso: s.timeSignature,
-        'Duração': s.duration ? formatDuration(s.duration) : '',
-        Notas: s.notes, Pausa: s.isPause ? 'Sim' : '',
-      }));
-      const ws = XLSX.utils.json_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, ws, pl.name.substring(0, 31));
+    try {
+      if (!playlists.length) {
+        toast({ title: 'Nada para exportar', description: 'Sem setlists.', variant: 'destructive' as any });
+        return;
+      }
+      const XLSX = await import('xlsx');
+      const wb = XLSX.utils.book_new();
+      const usedNames = new Set<string>();
+      const sanitize = (raw: string, fallback: string) => {
+        let n = (raw || fallback).replace(/[:\\/?*\[\]]/g, '_').trim();
+        if (!n) n = fallback;
+        n = n.substring(0, 31);
+        let candidate = n;
+        let i = 2;
+        while (usedNames.has(candidate.toLowerCase())) {
+          const suffix = ` (${i++})`;
+          candidate = n.substring(0, 31 - suffix.length) + suffix;
+        }
+        usedNames.add(candidate.toLowerCase());
+        return candidate;
+      };
+      playlists.forEach((pl, plIdx) => {
+        const data = (pl.songs || []).map((s, i) => ({
+          '#': i + 1, Banda: pl.band || 'Geral', Nome: s.name, Artista: s.artist || '',
+          BPM: s.bpm, Compasso: s.timeSignature,
+          'Duração': s.duration ? formatDuration(s.duration) : '',
+          Notas: s.notes, Pausa: s.isPause ? 'Sim' : '',
+        }));
+        const ws = XLSX.utils.json_to_sheet(data.length ? data : [{ Nome: '(vazia)' }]);
+        XLSX.utils.book_append_sheet(wb, ws, sanitize(pl.name, `Setlist ${plIdx + 1}`));
+      });
+      const d = new Date();
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      XLSX.writeFile(wb, `BeatMaster_Setlists_${dd}-${mm}-${yyyy}.xlsx`);
+      toast({ title: 'Export concluído', description: `${playlists.length} setlists exportadas.` });
+    } catch (err: any) {
+      console.error('Export XLSX failed:', err);
+      toast({ title: 'Erro ao exportar', description: err?.message || 'Falha desconhecida', variant: 'destructive' as any });
     }
-    const d = new Date();
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    XLSX.writeFile(wb, `BeatMaster_Setlists_${dd}-${mm}-${yyyy}.xlsx`);
-    toast({ title: 'Export concluído', description: `${playlists.length} setlists exportadas.` });
   };
 
   const importXlsx = async (e: React.ChangeEvent<HTMLInputElement>) => {

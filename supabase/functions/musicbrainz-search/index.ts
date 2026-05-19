@@ -11,14 +11,17 @@ serve(async (req) => {
   }
 
   try {
-    const { query, limit = 10 } = await req.json();
-    
-    if (!query || typeof query !== 'string') {
-      return new Response(JSON.stringify({ error: 'Query is required' }), {
+    const { query, limit: rawLimit = 10 } = await req.json();
+
+    if (!query || typeof query !== 'string' || query.length > 200) {
+      return new Response(JSON.stringify({ error: 'Invalid query' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const parsedLimit = typeof rawLimit === 'number' ? rawLimit : parseInt(String(rawLimit), 10);
+    const limit = Math.min(Math.max(1, Number.isFinite(parsedLimit) ? parsedLimit : 10), 25);
 
     const mbUrl = `https://musicbrainz.org/ws/2/recording?query=${encodeURIComponent(query)}&limit=${limit}&fmt=json`;
     

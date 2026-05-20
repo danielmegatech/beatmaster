@@ -67,7 +67,7 @@ const PadButton = memo(({ pad, index, isActive, hasBuffer, onTrigger, onConfig }
         <span className="truncate w-full px-0.5 sm:px-1">{pad.fileName || pad.name}</span>
         <span className={cn('text-[8px] sm:text-[9px] mt-0.5', isActive ? 'text-black/70' : 'text-white/50')}>[{index + 1}]</span>
       </button>
-      <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={handleConfig}>
+      <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={handleConfig} aria-label={`Configurar pad ${pad.name}`}>
         <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
       </Button>
     </div>
@@ -107,6 +107,7 @@ const MixerControl = memo(({ pad, index, onCommit }: MixerControlProps) => {
         onCheckedChange={(on) => onCommit(pad.id, { muted: !on })}
         className="scale-75 data-[state=checked]:bg-primary"
         title={muted ? 'Unmute' : 'Mute'}
+        aria-label={`${muted ? 'Desmutar' : 'Mutar'} pad ${pad.name}`}
       />
 
       {/* Volume icon */}

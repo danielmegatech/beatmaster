@@ -362,32 +362,32 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
             </Select>
             <Button
               size="icon" variant="outline" className="h-9 w-9 shrink-0"
-              disabled={!activePlaylist} onClick={startRename} title="Renomear setlist"
+              disabled={!activePlaylist} onClick={startRename} title="Renomear setlist" aria-label="Renomear setlist"
             >
               <Pencil className="w-3.5 h-3.5" />
             </Button>
             <Button
               size="icon" variant="outline" className="h-9 w-9 shrink-0"
-              disabled={activeIdx <= 0} onClick={() => movePlaylist(-1)} title="Mover acima"
+              disabled={activeIdx <= 0} onClick={() => movePlaylist(-1)} title="Mover acima" aria-label="Mover setlist para cima"
             >
               <ChevronUp className="w-3.5 h-3.5" />
             </Button>
             <Button
               size="icon" variant="outline" className="h-9 w-9 shrink-0"
               disabled={activeIdx < 0 || activeIdx >= playlists.length - 1}
-              onClick={() => movePlaylist(1)} title="Mover abaixo"
+              onClick={() => movePlaylist(1)} title="Mover abaixo" aria-label="Mover setlist para baixo"
             >
               <ChevronDown className="w-3.5 h-3.5" />
             </Button>
             <Button
               size="icon" variant="outline" className="h-9 w-9 shrink-0 text-destructive hover:bg-destructive/10"
-              disabled={!activePlaylist} onClick={() => setConfirmDelete(true)} title="Excluir setlist"
+              disabled={!activePlaylist} onClick={() => setConfirmDelete(true)} title="Excluir setlist" aria-label="Excluir setlist"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
             <Button
               size="icon" variant="default" className="h-9 w-9 shrink-0"
-              onClick={() => setShowNewInput(v => !v)} title="Nova setlist"
+              onClick={() => setShowNewInput(v => !v)} title="Nova setlist" aria-label="Nova setlist"
             >
               <Plus className="w-3.5 h-3.5" />
             </Button>

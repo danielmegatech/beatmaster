@@ -147,13 +147,13 @@ const Index = () => {
     <div className="h-[100dvh] flex flex-col overflow-hidden">
       <header className="flex items-center justify-between gap-2 py-2 sm:py-3 px-3 sm:px-4 max-w-6xl mx-auto w-full shrink-0">
         <div className="min-w-0">
-          <h1 className="text-base sm:text-xl md:text-2xl font-bold text-primary truncate">🎵 BeatMaster</h1>
+          <h1 className="text-base sm:text-xl md:text-2xl font-bold text-primary truncate">🎵 BeatMaster — Metrônomo, Setlist e Sampler</h1>
           <p className="hidden sm:block text-[10px] text-muted-foreground mt-0.5 truncate">Metrônomo · Setlist · Sampler</p>
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <div className="relative">
-            <Button variant="ghost" size="icon" onClick={() => setShowSkinPicker(!showSkinPicker)} className="h-9 w-9 sm:h-10 sm:w-10">
+            <Button variant="ghost" size="icon" onClick={() => setShowSkinPicker(!showSkinPicker)} className="h-9 w-9 sm:h-10 sm:w-10" aria-label="Escolher skin de cor">
               <Palette className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
             {showSkinPicker && (
@@ -164,6 +164,7 @@ const Index = () => {
                   {skins.map(s => (
                     <button key={s.id}
                       onClick={() => { setSkin(s.id); setShowSkinPicker(false); }}
+                      aria-label={`Skin ${s.label}`}
                       className={`flex items-center gap-2 w-full text-xs py-1.5 px-2 rounded-lg transition-colors hover:bg-secondary/50 ${skin === s.id ? 'bg-secondary text-foreground' : 'text-muted-foreground'}`}>
                       <div className={`w-3 h-3 rounded-full ${s.color}`} />{s.label}
                     </button>
@@ -172,10 +173,10 @@ const Index = () => {
               </>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="h-9 w-9 sm:h-10 sm:w-10">
+          <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="h-9 w-9 sm:h-10 sm:w-10" aria-label={isDark ? 'Ativar tema claro' : 'Ativar tema escuro'}>
             {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => setShowHelp(true)} className="h-9 w-9 sm:h-10 sm:w-10" title="Ajuda">
+          <Button variant="ghost" size="icon" onClick={() => setShowHelp(true)} className="h-9 w-9 sm:h-10 sm:w-10" title="Ajuda" aria-label="Abrir ajuda">
             <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
         </div>

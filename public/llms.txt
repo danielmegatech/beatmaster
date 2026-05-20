@@ -1,0 +1,9 @@
+# BeatMaster
+
+> Professional web app for live music performance: precision metronome, setlist manager, and MPC-style sampler pads — all offline-capable (PWA).
+
+BeatMaster helps musicians run rehearsals and shows with rock-solid tempo, organized setlists, and on-demand samples. Audio uses the Web Audio API for sample-accurate timing. Includes count-in, TTS song announcements, XLSX import/export of setlists, MusicBrainz metadata lookup, and 5 color skins (light/dark).
+
+## Pages
+
+- [Home](/): Main app — metronome, setlist manager, sampler pads, transport footer.

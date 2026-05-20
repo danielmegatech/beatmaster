@@ -307,12 +307,14 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
               variant="ghost" size="icon"
               className="h-7 w-7"
               onClick={onPrev} disabled={mode === 'free'}
+              aria-label="Música anterior"
             >
               <SkipBack className="w-3.5 h-3.5" />
             </Button>
             <Button
               onClick={handlePlayClick} size="icon"
               className={cn("rounded-full h-9 w-9 glow-purple", isPlaying && "pulse-active")}
+              aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
             >
               {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             </Button>
@@ -320,6 +322,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
               variant="ghost" size="icon"
               className="h-7 w-7"
               onClick={onNext} disabled={mode === 'free'}
+              aria-label="Próxima música"
             >
               <SkipForward className="w-3.5 h-3.5" />
             </Button>
@@ -401,12 +404,14 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
               variant="ghost" size="icon"
               className="h-7 w-7 md:h-8 md:w-8"
               onClick={onPrev} disabled={mode === 'free'}
+              aria-label="Música anterior"
             >
               <SkipBack className="w-3.5 h-3.5" />
             </Button>
             <Button
               onClick={handlePlayClick} size="icon"
               className={cn("rounded-full h-10 w-10 md:h-11 md:w-11 glow-purple", isPlaying && "pulse-active")}
+              aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
             >
               {isPlaying ? <Pause className="w-4 h-4 md:w-5 md:h-5" /> : <Play className="w-4 h-4 md:w-5 md:h-5" />}
             </Button>
@@ -414,6 +419,7 @@ const FooterPlayer: React.FC<FooterPlayerProps> = ({
               variant="ghost" size="icon"
               className="h-7 w-7 md:h-8 md:w-8"
               onClick={onNext} disabled={mode === 'free'}
+              aria-label="Próxima música"
             >
               <SkipForward className="w-3.5 h-3.5" />
             </Button>

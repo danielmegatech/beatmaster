@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState, useEffect } from 'react';
+import React, { useRef, useCallback, useState, useEffect, useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -112,17 +112,23 @@ const SongCard: React.FC<Props> = ({
 
       {isEditing ? (
         <div className="space-y-2 relative z-10">
-          <Input value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="Nome" className="h-8 text-sm" />
-          <Input value={editForm.artist || ''} onChange={e => setEditForm({ ...editForm, artist: e.target.value })} placeholder="Artista" className="h-8 text-sm" />
+          <label htmlFor={`song-name-${song.id}`} className="sr-only">Nome</label>
+          <Input id={`song-name-${song.id}`} value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="Nome" className="h-8 text-sm" />
+          <label htmlFor={`song-artist-${song.id}`} className="sr-only">Artista</label>
+          <Input id={`song-artist-${song.id}`} value={editForm.artist || ''} onChange={e => setEditForm({ ...editForm, artist: e.target.value })} placeholder="Artista" className="h-8 text-sm" />
           <div className="grid grid-cols-3 gap-2">
-            <Input type="number" value={editForm.bpm || 120} onChange={e => setEditForm({ ...editForm, bpm: +e.target.value })} placeholder="BPM" className="h-8 text-sm" />
+            <label htmlFor={`song-bpm-${song.id}`} className="sr-only">BPM</label>
+            <Input id={`song-bpm-${song.id}`} type="number" value={editForm.bpm || 120} onChange={e => setEditForm({ ...editForm, bpm: +e.target.value })} placeholder="BPM" className="h-8 text-sm" />
             <Select value={editForm.timeSignature || '4/4'} onValueChange={v => setEditForm({ ...editForm, timeSignature: v })}>
-              <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 text-sm" aria-label="Compasso"><SelectValue /></SelectTrigger>
               <SelectContent>{timeSignatures.map(ts => <SelectItem key={ts} value={ts}>{ts}</SelectItem>)}</SelectContent>
             </Select>
-            <Input value={durationInput} onChange={e => setDurationInput(e.target.value)} placeholder="m:ss" className="h-8 text-sm" />
+            <label htmlFor={`song-duration-${song.id}`} className="sr-only">Duração</label>
+            <Input id={`song-duration-${song.id}`} value={durationInput} onChange={e => setDurationInput(e.target.value)} placeholder="m:ss" className="h-8 text-sm" />
           </div>
+          <label htmlFor={`song-cover-${song.id}`} className="sr-only">URL da capa</label>
           <Input
+            id={`song-cover-${song.id}`}
             value={editForm.coverArt || ''}
             onChange={e => setEditForm({ ...editForm, coverArt: e.target.value })}
             placeholder="URL da capa (jpg/png/gif/webp)"
@@ -131,11 +137,12 @@ const SongCard: React.FC<Props> = ({
           {(editForm.coverArt) && (
             <img src={editForm.coverArt} alt="" className="w-16 h-16 rounded-lg object-cover border border-border" />
           )}
-          <Textarea value={editForm.notes || ''} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Notas..." className="text-sm min-h-[40px]" />
+          <label htmlFor={`song-notes-${song.id}`} className="sr-only">Notas</label>
+          <Textarea id={`song-notes-${song.id}`} value={editForm.notes || ''} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Notas..." className="text-sm min-h-[40px]" />
           <div className="flex gap-1">
-            <Button size="sm" onClick={onSaveEdit} className="text-xs gap-1 h-7"><Check className="w-3 h-3" /> Salvar</Button>
-            <Button size="sm" variant="ghost" onClick={onCancelEdit} className="text-xs gap-1 h-7"><X className="w-3 h-3" /></Button>
-            <Button size="sm" variant="ghost" onClick={onDelete} className="text-xs gap-1 h-7 text-destructive ml-auto"><Trash2 className="w-3 h-3" /></Button>
+            <Button size="sm" onClick={onSaveEdit} className="text-xs gap-1 h-7" aria-label="Salvar música"><Check className="w-3 h-3" /> Salvar</Button>
+            <Button size="sm" variant="ghost" onClick={onCancelEdit} className="text-xs gap-1 h-7" aria-label="Cancelar edição"><X className="w-3 h-3" /></Button>
+            <Button size="sm" variant="ghost" onClick={onDelete} className="text-xs gap-1 h-7 text-destructive ml-auto" aria-label="Excluir música"><Trash2 className="w-3 h-3" /></Button>
           </div>
         </div>
       ) : (
@@ -202,25 +209,25 @@ const SongCard: React.FC<Props> = ({
           {/* Reorder + actions buttons */}
           <div className="flex items-center gap-0 shrink-0 opacity-70 group-hover/song:opacity-100 transition-opacity">
             <Button variant="ghost" size="icon" className="h-7 w-6" disabled={isFirst}
-              onClick={(e) => { e.stopPropagation(); onMove('top'); }} title="Mover para o início">
+              onClick={(e) => { e.stopPropagation(); onMove('top'); }} title="Mover para o início" aria-label="Mover música para o início">
               <ChevronsUp className="w-3.5 h-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-6" disabled={isFirst}
-              onClick={(e) => { e.stopPropagation(); onMove('up'); }} title="Mover para cima">
+              onClick={(e) => { e.stopPropagation(); onMove('up'); }} title="Mover para cima" aria-label="Mover música para cima">
               <ChevronUp className="w-3.5 h-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-6" disabled={isLast}
-              onClick={(e) => { e.stopPropagation(); onMove('down'); }} title="Mover para baixo">
+              onClick={(e) => { e.stopPropagation(); onMove('down'); }} title="Mover para baixo" aria-label="Mover música para baixo">
               <ChevronDown className="w-3.5 h-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-6" disabled={isLast}
-              onClick={(e) => { e.stopPropagation(); onMove('bottom'); }} title="Mover para o fim">
+              onClick={(e) => { e.stopPropagation(); onMove('bottom'); }} title="Mover para o fim" aria-label="Mover música para o fim">
               <ChevronsDown className="w-3.5 h-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 ml-1" onClick={(e) => { e.stopPropagation(); onStartEdit(); }} title="Editar">
+            <Button variant="ghost" size="icon" className="h-7 w-7 ml-1" onClick={(e) => { e.stopPropagation(); onStartEdit(); }} title="Editar" aria-label="Editar música">
               <Edit2 className="w-3 h-3" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Remover">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Remover" aria-label="Remover música">
               <Trash2 className="w-3 h-3" />
             </Button>
           </div>

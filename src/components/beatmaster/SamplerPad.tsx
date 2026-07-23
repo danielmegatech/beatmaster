@@ -339,20 +339,21 @@ const SamplerPad: React.FC<SamplerPadProps> = ({ getAudioContext, getMasterGain,
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Nome</label>
-              <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-8 text-sm" />
+              <label htmlFor="pad-name-input" className="text-xs text-muted-foreground block mb-1">Nome</label>
+              <Input id="pad-name-input" value={editName} onChange={e => setEditName(e.target.value)} className="h-8 text-sm" />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
+              <label htmlFor="pad-url-input" className="text-xs text-muted-foreground block mb-1">
                 <Link className="w-3 h-3 inline mr-1" />URL do áudio
               </label>
-              <Input value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="https://..." className="h-8 text-sm" />
+              <Input id="pad-url-input" value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="https://..." className="h-8 text-sm" />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
+              <label htmlFor="pad-file-input" className="text-xs text-muted-foreground block mb-1">
                 <Upload className="w-3 h-3 inline mr-1" />Arquivo local
               </label>
               <Input
+                id="pad-file-input"
                 type="file"
                 accept="audio/*"
                 className="h-8 text-sm"

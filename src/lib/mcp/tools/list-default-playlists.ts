@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { defaultPlaylists, exercisePlaylists } from "@/data/defaultPresets";
+import { defaultPlaylists, exercisePlaylists } from "../../../data/defaultPresets";
 
 export default defineTool({
   name: "list_default_playlists",

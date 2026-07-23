@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "beatmaster-mcp",
+      "version": "0.1.0",
+      "title": "BeatMaster MCP"
+    },
+    "tools": [
+      {
+        "name": "list_default_playlists",
+        "title": "List default BeatMaster playlists",
+        "description": "List BeatMaster's built-in playlists (band setlists and instrument exercises), each with their songs, BPMs, and time signatures.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "include_exercises": {
+              "type": "boolean",
+              "description": "Include the 🎓 Exercícios instrument-training playlists. Defaults to true."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_music_metadata",
+        "title": "Search music metadata (MusicBrainz)",
+        "description": "Search the MusicBrainz recording database for a song/artist. Returns matches with title, artist, release, and MBID — useful for enriching BeatMaster setlists.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "Song title, artist, or 'title artist' query."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25,
+              "description": "Max results (1-25). Default 5."
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "bpm_utils",
+        "title": "BPM & tempo utilities",
+        "description": "Convert between BPM, milliseconds per beat, and beats/bars for a given duration and time signature. Handy for planning setlist timing.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "bpm": {
+              "type": "number",
+              "minimum": 20,
+              "maximum": 400,
+              "description": "Tempo in beats per minute."
+            },
+            "timeSignature": {
+              "type": "string",
+              "description": "Time signature like '4/4', '3/4', '6/8'. Defaults to '4/4'."
+            },
+            "durationSeconds": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Optional song duration; if provided, returns total beats and bars."
+            }
+          },
+          "required": [
+            "bpm"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

@@ -1,12 +1,18 @@
 {
-  "name": "BeatMaster",
+  "name": "BeatMaster — Metrônomo, Setlist & Sampler",
   "short_name": "BeatMaster",
-  "description": "Professional Music Performance App — Metronome, Setlist & Sampler",
-  "start_url": "/smartbeat/",
+  "description": "App profissional de performance musical — metrônomo, setlist e sampler.",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#0a0515",
   "theme_color": "#7c3aed",
+  "lang": "pt-BR",
   "icons": [
-    { "src": "/smartbeat/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }
+    { "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

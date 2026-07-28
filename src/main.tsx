@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { initDiagnosticsCapture } from "./lib/diagnostics";
 import App from "./App.tsx";
 import "./index.css";
 
@@ -10,6 +11,8 @@ if ("serviceWorker" in navigator) {
     regs.forEach((r) => r.unregister());
   }).catch(() => {});
 }
+
+initDiagnosticsCapture();
 
 createRoot(document.getElementById("root")!).render(
   <HelmetProvider>

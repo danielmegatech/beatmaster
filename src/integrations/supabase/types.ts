@@ -14,13 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      diagnostics: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          payload: Json
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          payload?: Json
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          payload?: Json
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      feedback: {
+        Row: {
+          category: string
+          contact: string | null
+          created_at: string
+          id: string
+          message: string
+          name: string | null
+          page: string | null
+          rating: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          category?: string
+          contact?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          name?: string | null
+          page?: string | null
+          rating?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          category?: string
+          contact?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          name?: string | null
+          page?: string | null
+          rating?: number | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      site_stats: {
+        Row: {
+          count: number
+          key: string
+          updated_at: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          updated_at?: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_visit: {
+        Args: { _unique?: boolean }
+        Returns: {
+          unique_visitors: number
+          visits: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

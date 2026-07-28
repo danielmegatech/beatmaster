@@ -1,0 +1,1 @@
+DELETE FROM public.feedback; DELETE FROM public.diagnostics; UPDATE public.site_stats SET count = 0;

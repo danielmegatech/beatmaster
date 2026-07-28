@@ -9,8 +9,10 @@ import SamplerPad from '@/components/beatmaster/SamplerPad';
 import FooterPlayer from '@/components/beatmaster/FooterPlayer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, Palette, HelpCircle } from 'lucide-react';
+import { Sun, Moon, Palette, HelpCircle, MessageSquareHeart } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import HelpDialog from '@/components/beatmaster/HelpDialog';
+import { useVisitorCount } from '@/hooks/useVisitorCount';
 import { defaultPlaylists, exercisePlaylists } from '@/data/defaultPresets';
 import type { Playlist, Song, AppMode } from '@/types/beatmaster';
 
@@ -27,6 +29,7 @@ const skins: { id: SkinColor; label: string; color: string }[] = [
 const Index = () => {
   const metro = useMetronome();
   const isMobile = useIsMobile();
+  useVisitorCount(true);
   const [playlists, setPlaylists] = useLocalStorage<Playlist[]>('bm-playlists', []);
   const [activePlaylistId, setActivePlaylistId] = useLocalStorage<string | null>('bm-active-playlist', null);
   const [activeSongId, setActiveSongId] = useLocalStorage<string | null>('bm-active-song', null);
@@ -175,6 +178,11 @@ const Index = () => {
           </div>
           <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="h-9 w-9 sm:h-10 sm:w-10" aria-label={isDark ? 'Ativar tema claro' : 'Ativar tema escuro'}>
             {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
+          </Button>
+          <Button asChild variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10" title="Feedback e testadores">
+            <Link to="/testadores" aria-label="Enviar feedback e área de testadores">
+              <MessageSquareHeart className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Link>
           </Button>
           <Button variant="ghost" size="icon" onClick={() => setShowHelp(true)} className="h-9 w-9 sm:h-10 sm:w-10" title="Ajuda" aria-label="Abrir ajuda">
             <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
